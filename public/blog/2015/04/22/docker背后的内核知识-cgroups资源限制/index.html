@@ -18,7 +18,7 @@
   
   <meta name="description" content="当我们谈论Docker时，我们常常会聊到Docker的实现方式。很多开发者都会知道，Docker的本质实际上是宿主机上的一个进程，通过namespace实现了资源隔离，通过cgroup实现了资源限制，通过UnionFS实现了Copy on Write的文件操作。但是当我们再深入一步的提出，namespace和cgroup实现细节时，知道的人可能就所剩无几了。本文在docker基础研究工作中着重对内核的cgroup技术做了细致的分析和梳理，希望能对读者深入理解Docker有所帮助。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -428,15 +428,15 @@
 <h4 id="3-创建hierarchy层级并挂载子系统">（3）创建hierarchy层级并挂载子系统</h4>
 
 <p>在组织结构与规则一节中我们提到了hierarchy层级和subsystem子系统的关系，我们知道使用cgroup的最佳方式是：为想要管理的每个或每组资源创建单独的cgroup层级结构。而创建hierarchy并不神秘，实际上就是做一个标记，通过挂载一个tmpfs{![基于内存的临时文件系统，详见：<a href="http://en.wikipedia.org/wiki/Tmpfs]}文件系统，并给一个好的名字就可以了，系统默认挂载的cgroup就会进行如下操作。">http://en.wikipedia.org/wiki/Tmpfs]}文件系统，并给一个好的名字就可以了，系统默认挂载的cgroup就会进行如下操作。</a></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">    mount -t tmpfs cgroups /sys/fs/cgroup</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">    mount -t tmpfs cgroups /sys/fs/cgroup</code></pre></div>
 <p>其中<code>-t</code>即指定挂载的文件系统类型，其后的<code>cgroups</code>是会出现在<code>mount</code>展示的结果中用于标识，可以选择一个有用的名字命名，最后的目录则表示文件的挂载点位置。 挂载完成<code>tmpfs</code>后就可以通过<code>mkdir</code>命令创建相应的文件夹。</p>
 
 <p><code>mkdir /sys/fs/cgroup/cg1</code></p>
 
 <p>再把子系统挂载到相应层级上，挂载子系统也使用mount命令，语法如下。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">    mount -t cgroup -o subsystems name /cgroup/name</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">    mount -t cgroup -o subsystems name /cgroup/name</code></pre></div>
 <p>其​​​中​​​ subsystems 是​​​使​​​用​​​<code>,</code>（逗号）​​​分​​​开​​​的​​​子​​​系​​​统​​​列​​​表，name 是​​​层​​​级​​​名​​​称​​​。具体我们以挂载cpu和memory的子系统为例，命令如下。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">    mount –t cgroup –o cpu,memory cpu_and_mem /sys/fs/cgroup/cg1</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">    mount –t cgroup –o cpu,memory cpu_and_mem /sys/fs/cgroup/cg1</code></pre></div>
 <p>从<code>mount</code>命令开始，<code>-t</code>后面跟的是挂载的文件系统类型，即<code>cgroup</code>文件系统。<code>-o</code>后面跟要挂载的子系统种类如<code>cpu</code>、<code>memory</code>，用逗号隔开，其后的<code>cpu_and_mem</code>不被cgroup代码的解释，但会出现在/proc/mounts里，可以使用任何有用的标识字符串。最后的参数则表示挂载点的目录位置。</p>
 
 <p>说明：如果挂载时提示<code>mount: agent already mounted or /cgroup busy</code>，则表示子系统已经挂载，需要先卸载原先的挂载点，通过第二条中描述的命令可以定位挂载点。</p>
@@ -446,9 +446,9 @@
 <p>目前<code>cgroup</code>文件系统虽然支持重新挂载，但是官方不建议使用，重新挂载虽然可以改变绑定的子系统和<code>release agent</code>，但是它要求对应的hierarchy是空的并且release_agent会被传统的<code>fsnotify</code>（内核默认的文件系统通知）代替，这就导致重新挂载很难生效，未来重新挂载的功能可能会移除。你可以通过卸载，再挂载的方式处理这样的需求。</p>
 
 <p>卸载cgroup非常简单，你可以通过<code>cgdelete</code>命令，也可以通过<code>rmdir</code>，以刚挂载的cg1为例，命令如下。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">    rmdir /sys/fs/cgroup/cg1</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">    rmdir /sys/fs/cgroup/cg1</code></pre></div>
 <p><code>rmdir</code>执行成功的必要条件是cg1下层没有创建其它cgroup，cg1中没有添加任何task，并且它也没有被别的cgroup所引用。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">    cgdelete cpu,memory:/</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">    cgdelete cpu,memory:/</code></pre></div>
 <p>使用<code>cgdelete</code>命令可以递归的删除cgroup及其命令下的后代cgroup，并且如果cgroup中有task，那么task会自动移到上一层没有被删除的cgroup中，如果所有的cgroup都被删除了，那task就不被cgroups控制。但是一旦再次创建一个新的cgroup，所有进程都会被放进新的cgroup中。</p>
 
 <h4 id="5-设置cgroups参数">（5）设置cgroups参数</h4>
@@ -898,7 +898,7 @@
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -1151,6 +1151,19 @@
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -1172,19 +1185,6 @@
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

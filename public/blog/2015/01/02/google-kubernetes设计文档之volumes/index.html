@@ -18,7 +18,7 @@
   
   <meta name="description" content="Kubernetes是Google开源的容器集群管理系统，构建于Docker之上，为容器化的应用提供资源调度、部署运行、服务发现、扩容缩容等功能。本文描述了Kubernetes中Volumes的使用情况，Volume是一个能够被容器访问的目录。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -288,7 +288,7 @@
 <p>在你能够在pod上使用GCE PD前，你需要先创建并格式化它。</p>
 
 <p>我们正在积极努力得使这个过程更加精简容易。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#033">DISK_NAME</span><span style="color:#555">=</span>my-data-disk
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#033">DISK_NAME</span><span style="color:#555">=</span>my-data-disk
     <span style="color:#033">DISK_SIZE</span><span style="color:#555">=</span>500GB
     <span style="color:#033">ZONE</span><span style="color:#555">=</span>us-central1-a
     gcloud compute disks create --size<span style="color:#555">=</span><span style="color:#033">$DISK_SIZE</span> --zone<span style="color:#555">=</span><span style="color:#033">$ZONE</span> <span style="color:#033">$DISK_NAME</span>
@@ -297,64 +297,64 @@
 </span><span style="color:#c30;font-weight:bold"></span>      --command <span style="color:#c30">&#34;sudo mkdir /mnt/tmp &amp;&amp; sudo /usr/share/google/safe_format_and_mount /dev/disk/by-id/google-temp-data /mnt/tmp&#34;</span>
     gcloud compute instances detach-disk --zone<span style="color:#555">=</span><span style="color:#033">$ZONE</span> --disk <span style="color:#033">$DISK_NAME</span> kubernetes-master</code></pre></div>
 <p>GCE PD的配置实例：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1beta1<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">desiredState</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">manifest</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">containers</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span>- <span style="color:#309;font-weight:bold">image</span>:<span style="color:#bbb"> </span>kubernetes/pause<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">volumeMounts</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">              </span>- <span style="color:#309;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;/testpd&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">                </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;testpd&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">id</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">version</span>:<span style="color:#bbb"> </span>v1beta1<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">volumes</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">source</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">              </span><span style="color:#309;font-weight:bold">persistentDisk</span>:<span style="color:#bbb">
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1beta1<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">desiredState</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">manifest</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">containers</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span>- <span style="color:#069;font-weight:bold">image</span>:<span style="color:#bbb"> </span>kubernetes/pause<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">volumeMounts</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">              </span>- <span style="color:#069;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;/testpd&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">                </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;testpd&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">id</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">version</span>:<span style="color:#bbb"> </span>v1beta1<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">volumes</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">source</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">              </span><span style="color:#069;font-weight:bold">persistentDisk</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">                </span><span style="color:#09f;font-style:italic"># This GCE PD must already exist and be formatted ext4</span><span style="color:#bbb">
-</span><span style="color:#bbb">                </span><span style="color:#309;font-weight:bold">pdName</span>:<span style="color:#bbb"> </span>test<span style="color:#bbb">
-</span><span style="color:#bbb">                </span><span style="color:#309;font-weight:bold">fsType</span>:<span style="color:#bbb"> </span>ext4<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">id</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Pod</code></pre></div>
+</span><span style="color:#bbb">                </span><span style="color:#069;font-weight:bold">pdName</span>:<span style="color:#bbb"> </span>test<span style="color:#bbb">
+</span><span style="color:#bbb">                </span><span style="color:#069;font-weight:bold">fsType</span>:<span style="color:#bbb"> </span>ext4<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">id</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Pod</code></pre></div>
 <h1 id="kubernetes的volumes使用实例-walkthrough"><strong>Kubernetes的Volumes使用实例-Walkthrough</strong></h1>
 
 <p>对于永久存储，首先，我们知道容器的文件系统与容器有着同等的生命周期，所以，我们还需要有永久存储。为了实现这个目的，你需要声明一个Volume，把它作为Pod的一部分，同时将它挂载到一个容器上。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1beta1<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">desiredState</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">manifest</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">containers</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span>- <span style="color:#309;font-weight:bold">image</span>:<span style="color:#bbb"> </span>kubernetes/pause<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">volumeMounts</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">              </span>- <span style="color:#309;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;/testpd&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">                </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;testpd&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">id</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">version</span>:<span style="color:#bbb"> </span>v1beta1<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">volumes</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">source</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">              </span><span style="color:#309;font-weight:bold">persistentDisk</span>:<span style="color:#bbb">
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1beta1<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">desiredState</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">manifest</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">containers</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span>- <span style="color:#069;font-weight:bold">image</span>:<span style="color:#bbb"> </span>kubernetes/pause<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">volumeMounts</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">              </span>- <span style="color:#069;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;/testpd&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">                </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;testpd&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">id</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">version</span>:<span style="color:#bbb"> </span>v1beta1<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">volumes</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">source</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">              </span><span style="color:#069;font-weight:bold">persistentDisk</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">                </span><span style="color:#09f;font-style:italic"># This GCE PD must already exist and be formatted ext4</span><span style="color:#bbb">
-</span><span style="color:#bbb">                </span><span style="color:#309;font-weight:bold">pdName</span>:<span style="color:#bbb"> </span>test<span style="color:#bbb">
-</span><span style="color:#bbb">                </span><span style="color:#309;font-weight:bold">fsType</span>:<span style="color:#bbb"> </span>ext4<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">id</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Pod</code></pre></div>
+</span><span style="color:#bbb">                </span><span style="color:#069;font-weight:bold">pdName</span>:<span style="color:#bbb"> </span>test<span style="color:#bbb">
+</span><span style="color:#bbb">                </span><span style="color:#069;font-weight:bold">fsType</span>:<span style="color:#bbb"> </span>ext4<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">id</span>:<span style="color:#bbb"> </span>testpd<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Pod</code></pre></div>
 <p>那么，我们该如何做呢？我们为Pod增加一个Volume：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#0cf;font-weight:bold">...</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">volumes</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      	</span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>redis-persistent-storage<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">source</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">emptyDir</span>:<span style="color:#bbb"> </span>{}<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#0cf;font-weight:bold">...</span></code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">...<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">volumes</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      	</span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>redis-persistent-storage<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">source</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">emptyDir</span>:<span style="color:#bbb"> </span>{}<span style="color:#bbb">
+</span><span style="color:#bbb"></span>...</code></pre></div>
 <p>然后，我们为该Volume在容器中增加一个对应的挂载路径：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#0cf;font-weight:bold">...</span><span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">volumeMounts</span>:<span style="color:#bbb">
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">...<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">volumeMounts</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">            </span><span style="color:#09f;font-style:italic"># name must match the volume name below</span><span style="color:#bbb">
-</span><span style="color:#bbb">          	</span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>redis-persistent-storage<span style="color:#bbb">
+</span><span style="color:#bbb">          	</span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>redis-persistent-storage<span style="color:#bbb">
 </span><span style="color:#bbb">            </span><span style="color:#09f;font-style:italic"># mount path within the container</span><span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span>/data/redis<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#0cf;font-weight:bold">...</span></code></pre></div>
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span>/data/redis<span style="color:#bbb">
+</span><span style="color:#bbb"></span>...</code></pre></div>
 <p>在Kubernetes中， EmptyDir Volumes在Pod的生命周期内一直可用，该周期比任何一个容器的生命周期都长，所以即使容器失效并重启，我们的永久存储将仍然可用。</p>
 
 <p>如果你希望挂载一个已经存在于文件系统的目录(例如/var/logs)，你可以直接使用HostDir。</p>
@@ -605,7 +605,7 @@
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -858,6 +858,19 @@
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -879,19 +892,6 @@
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

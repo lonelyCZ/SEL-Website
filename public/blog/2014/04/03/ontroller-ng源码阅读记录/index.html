@@ -18,7 +18,7 @@
   
   <meta name="description" content="Cloud_Controller_NG就是cloud controller next generation的意思。即Cloud Foundry 平台用来管理控制应用和服务的组件。官方文档是这么解释CCNG的作用的： * 维护一个包含应用、服务、配置信息的数据库(CCDB)。 * 在blobstore中存储应用的packages和droplets。 * 通过NATS和其他组件进行通信，包括Droplet Execution Agents (DEAs)、Service Gateways、和 Health Manager（HM）。 * 其他供用户调用的后端API。阅读该组件源码，有助于从应用管理的视角理解cloudfoundry的运行过程。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -305,7 +305,7 @@
 <p>一开始看的时候发现第2步和第3步有很多地方函数命名是相同的，觉得很奇怪。后来才知道，第3步就是第2步的延续。所以发送的请求内容是不同的，同时第3步对更新的返回信息有更多的处理。</p>
 
 <p>可以看一下第2步stage_request的代码，此时droplet还未形成：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">staging_request</span>(app)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">staging_request</span>(app)
         {
           <span style="color:#fc3">:app_id</span>       <span style="color:#555">=&gt;</span> app<span style="color:#555">.</span>guid,
           <span style="color:#fc3">:properties</span>   <span style="color:#555">=&gt;</span> staging_task_properties(app),
@@ -314,12 +314,12 @@
         }
       <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>第3点的stage_request代码除上述部分外，还要多</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#fc3">:buildpack_cache_download_uri</span> <span style="color:#555">=&gt;</span> @blobstore_url_generator<span style="color:#555">.</span>buildpack_cache_download_url(@app),  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#fc3">:buildpack_cache_download_uri</span> <span style="color:#555">=&gt;</span> @blobstore_url_generator<span style="color:#555">.</span>buildpack_cache_download_url(@app),  
     <span style="color:#fc3">:buildpack_cache_upload_uri</span> <span style="color:#555">=&gt;</span> @blobstore_url_generator<span style="color:#555">.</span>buildpack_cache_upload_url(@app),  
     <span style="color:#fc3">:start_message</span> <span style="color:#555">=&gt;</span> start_app_message,  
     <span style="color:#fc3">:admin_buildpacks</span> <span style="color:#555">=&gt;</span> admin_buildpacks  </code></pre></div>
 <p>同时上传和下载的地址获取方式也已经不同了，因为droplet已经实际存在了：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#fc3">:download_uri</span> <span style="color:#555">=&gt;</span> @blobstore_url_generator<span style="color:#555">.</span>app_package_download_url(@app),  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#fc3">:download_uri</span> <span style="color:#555">=&gt;</span> @blobstore_url_generator<span style="color:#555">.</span>app_package_download_url(@app),  
     <span style="color:#fc3">:upload_uri</span> <span style="color:#555">=&gt;</span> @blobstore_url_generator<span style="color:#555">.</span>droplet_upload_url(@app),  </code></pre></div>
 <p>同时，app_stage_task在进行stage之前会从stager_pool中找出合适的stager来完成staging任务。</p>
 
@@ -390,7 +390,7 @@
 <p>启动命令为：<code>$ ./bin/cloud_controller [-c] [-m] [-d]</code></p>
 
 <p>打开bin/cloud_controller这个文件，前两行就是</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$:.unshift<span style="color:#555">(</span>File.expand_path<span style="color:#555">(</span><span style="color:#c30">&#34;../../lib&#34;</span>, __FILE__<span style="color:#555">))</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$:.unshift<span style="color:#555">(</span>File.expand_path<span style="color:#555">(</span><span style="color:#c30">&#34;../../lib&#34;</span>, __FILE__<span style="color:#555">))</span>
 $:.unshift<span style="color:#555">(</span>File.expand_path<span style="color:#555">(</span><span style="color:#c30">&#34;../../app&#34;</span>, __FILE__<span style="color:#555">))</span></code></pre></div>
 <p>这两行的作用就是把项目中lib和app两个文件夹加入到ruby的path路径中，这样就能在后面直接使用require/load调用了。</p>
 
@@ -411,7 +411,7 @@ $:.unshift<span style="color:#555">(</span>File.expand_path<span style="color:#5
 </ul>
 
 <p><strong>启动过程</strong>如下:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">run!</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">run!</span>
 start_cloud_controller
 config <span style="color:#555">=</span> @config<span style="color:#555">.</span>dup 
 <span style="color:#360">Seeds</span><span style="color:#555">.</span>write_seed_data(config) <span style="color:#069;font-weight:bold">if</span> @insert_seed_data
@@ -429,7 +429,7 @@ start_thin_server(app, config)
 <p><strong>附，初始化配置的相关模块：</strong> * MessageBus * AccountCapacity * ResourcePool * AppPackage * StagerPool * AppStager * LegacyStaging * DeaPool * DeaClient * LegacyBulk * HealthManagerClient * Models</p>
 
 <p>之后通过create_app生成一个Rack::Builder实例,其中有如下关键代码</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">map <span style="color:#c30">&#34;/&#34;</span> <span style="color:#069;font-weight:bold">do</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">map <span style="color:#c30">&#34;/&#34;</span> <span style="color:#069;font-weight:bold">do</span>
 run <span style="color:#360">VCAP</span><span style="color:#555">::</span><span style="color:#360">CloudController</span><span style="color:#555">::</span><span style="color:#360">Controller</span><span style="color:#555">.</span>new(config)
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>map &lsquo;/&lsquo;表示，不管接收到什么http请求，都会调用Controller进行处理。do&hellip;end模块中<a href="http://rack.rubyforge.org/doc/Rack/Builder.html#method-i-run">run这个方法</a>的用法属于sinatra框架的特殊语法。</p>
@@ -457,13 +457,13 @@ run <span style="color:#360">VCAP</span><span style="color:#555">::</span><span 
 <h3 id="自定义路由">自定义路由</h3>
 
 <p>自定义路由即文件被载入(require)到Controller模块时，就是rack框架可识别的路由信息。这样自定义的路由信息都被写成类似如下的格式：(以lib/cloud_controller/api/app_bits.rb为例)</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">module</span> <span style="color:#0cf;font-weight:bold">VCAP::CloudController</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">module</span> <span style="color:#0cf;font-weight:bold">VCAP::CloudController</span>
   rest\_controller <span style="color:#fc3">:AppBits</span> <span style="color:#069;font-weight:bold">do</span>
     <span style="color:#555">......</span>
   <span style="color:#069;font-weight:bold">end</span>
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>这其中，起到关键作用的就是rest_contoller这个宏定义方法，在require文件app_bits.rb时（或者说执行到这里时），会将其后的内容展开。rest_controller定义在lib/cloud_controller/rest_controller.rb中</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#0a8;font-weight:bold">self</span><span style="color:#555">.</span><span style="color:#c0f">rest_controller</span>(<span style="color:#366">name</span>, <span style="color:#555">&amp;</span>blk)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#0a8;font-weight:bold">self</span><span style="color:#555">.</span><span style="color:#c0f">rest_controller</span>(<span style="color:#366">name</span>, <span style="color:#555">&amp;</span>blk)
     <span style="color:#09f;font-style:italic"># Class.new：生成一个无名的superclass的子类. 若superclass不存在则生成Object的子类.</span>
     <span style="color:#09f;font-style:italic"># 这里的superclass应该是RestController::ModelController, Base的子类，include了routes</span>
     klass <span style="color:#555">=</span> <span style="color:#360">Class</span><span style="color:#555">.</span>new <span style="color:#360">RestController</span><span style="color:#555">::</span><span style="color:#360">ModelController</span>
@@ -485,20 +485,20 @@ run <span style="color:#360">VCAP</span><span style="color:#555">::</span><span 
 <p>对于app_bits.rb，参数name就是:AppBits，blk就是do&hellip;end部分的内容。首先动态生成一个类，然后执行klass.class_eval将blk中的方法添加为自己的方法。添加方法的同时会执行blk。</p>
 
 <p>对于app_bits.rb来说，通过def&hellip;end定义的方法不会被执行，如upload、download等。而独立于方法定义之外的是语句可执行的。如</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">disable\_default\_routes
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">disable\_default\_routes
 put <span style="color:#c30">&#34;</span><span style="color:#a00">#{</span>path\_id<span style="color:#a00">}</span><span style="color:#c30">/bits&#34;</span>, <span style="color:#fc3">:upload</span>
 get <span style="color:#c30">&#34;</span><span style="color:#a00">#{</span>path\_id<span style="color:#a00">}</span><span style="color:#c30">/download&#34;</span>, <span style="color:#fc3">:download</span></code></pre></div>
 <p>等等。</p>
 
 <p>由此可以看出，这种路由配置实际上是一个方法的执行。以<code>put &quot;#{path_id}/bits&quot; :upload</code>为例，其方法是<code>put</code>，参数是<code>&quot;#{path_id}/bits&quot;</code>和<code>:upload</code>。这里的<code>put</code>方法也是在<code>lib/cloud_controller/rest_controller/routes.rb</code>中定义的</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#555">[</span><span style="color:#fc3">:post</span>, <span style="color:#fc3">:get</span>, <span style="color:#fc3">:put</span>, <span style="color:#fc3">:delete</span><span style="color:#555">].</span>each <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>verb<span style="color:#555">|</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#555">[</span><span style="color:#fc3">:post</span>, <span style="color:#fc3">:get</span>, <span style="color:#fc3">:put</span>, <span style="color:#fc3">:delete</span><span style="color:#555">].</span>each <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>verb<span style="color:#555">|</span>
   define_method(verb) <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|*</span>args, <span style="color:#555">&amp;</span>blk<span style="color:#555">|</span>
     (path, <span style="color:#366">method</span>) <span style="color:#555">=</span> <span style="color:#555">*</span>args
   define_route(verb, path, <span style="color:#366">method</span>, <span style="color:#555">&amp;</span>blk)
   <span style="color:#069;font-weight:bold">end</span>
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>这里同时定义了4个方法，包括<code>put</code>。每一个方法的功能又是定义一个方法。对于<code>put</code>，该方法的名字为<code>put</code>，参数为<code>args</code>和<code>blk</code>，在<code>put &quot;#{path_id}/bits&quot;, :upload</code>中，args是<code>&quot;#{path_id}/bits&quot;, :upload</code>，blk为<code>nil</code>。进一步解析为，path=<code>&quot;#{path_id}/bits&quot;</code>，method=<code>&quot;upload&quot;</code>。然后执行<code>define_route(&quot;put&quot;, &quot;#{path_id}/bits&quot;, &quot;upload&quot;)</code>。 define_route定义在<code>lib/cloud_controller/rest_controller/routes.rb</code>中</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">define_route</span>(verb, path, <span style="color:#366">method</span> <span style="color:#555">=</span> <span style="color:#069">nil</span>, <span style="color:#555">&amp;</span>blk)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">define_route</span>(verb, path, <span style="color:#366">method</span> <span style="color:#555">=</span> <span style="color:#069">nil</span>, <span style="color:#555">&amp;</span>blk)
     opts <span style="color:#555">=</span> {}
     opts<span style="color:#555">[</span><span style="color:#fc3">:consumes</span><span style="color:#555">]</span> <span style="color:#555">=</span> <span style="color:#555">[</span><span style="color:#fc3">:json</span><span style="color:#555">]</span> <span style="color:#069;font-weight:bold">if</span> <span style="color:#555">[</span><span style="color:#fc3">:put</span>, <span style="color:#fc3">:post</span><span style="color:#555">].</span>include?(verb)
     klass <span style="color:#555">=</span> <span style="color:#366">self</span>       
@@ -514,7 +514,7 @@ get <span style="color:#c30">&#34;</span><span style="color:#a00">#{</span>path\
     <span style="color:#069;font-weight:bold">end</span>
   <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>controller就定义在本文件中，<code>controller.class=Class.send</code>若是带块调用的话,也会把块原封不动地传给方法，于是就执行<code>put &quot;#{path_id}/bits&quot; do...end</code>，这时还不知道如何执行put，所以就展开放在这里，成了rack可读的形式。 send后面有一个参数*args实际上是:guid，这是。Sinatra框架中，路由范式可以包括具名参数。例如</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">get <span style="color:#c30">&#39;/:path/:name&#39;</span> <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>n, m<span style="color:#555">|</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">get <span style="color:#c30">&#39;/:path/:name&#39;</span> <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>n, m<span style="color:#555">|</span>
     <span style="color:#c30">&#34;path= </span><span style="color:#a00">#{</span>n<span style="color:#a00">}</span><span style="color:#c30">; name= </span><span style="color:#a00">#{</span>m<span style="color:#a00">}</span><span style="color:#c30;font-weight:bold">\n</span><span style="color:#c30">&#34;</span>
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>path展开到最底层，只有一个具名参数:guid，于是*args就是:guid。</p>
@@ -526,12 +526,12 @@ get <span style="color:#c30">&#34;</span><span style="color:#a00">#{</span>path\
 <h3 id="默认路由">默认路由</h3>
 
 <p>app.rb及其他一些文件中，没有调用<code>disable_default_routes</code>，在执行到rest_controller时，会调用define_routes来定义自己的路由。通过define_routes创建的路由具有一定的相似性，源文件只需给出路径名的一部分，其他部分在define_routes中动态生成，因此称为默认路由。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">define_routes</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">define_routes</span>
     define_standard_routes
     define_to_many_routes
   <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p><code>define_standard_routes</code>和<code>define_to_many_routes</code>定义在同名文件中。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">define_standard_routes</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">define_standard_routes</span>
     <span style="color:#555">[</span>
       <span style="color:#555">[</span><span style="color:#fc3">:post</span>,   path,    <span style="color:#fc3">:create</span><span style="color:#555">]</span>,
       <span style="color:#555">[</span><span style="color:#fc3">:get</span>,    path,    <span style="color:#fc3">:enumerate</span><span style="color:#555">]</span>,
@@ -543,7 +543,7 @@ get <span style="color:#c30">&#34;</span><span style="color:#a00">#{</span>path\
     <span style="color:#069;font-weight:bold">end</span>
   <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>define_standard_routes生成一些相对固定的路由。当有path时，路由为path，方法为post和get；当有path_id时，路由为path_id，方法为get，put和delete。path定义在<code>lib/cloud_controller/rest_controller/base.rb</code>中</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">path</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">path</span>
     <span style="color:#c30">&#34;</span><span style="color:#a00">#{</span><span style="color:#360">ROUTE_PREFIX</span><span style="color:#a00">}</span><span style="color:#c30">/</span><span style="color:#a00">#{</span>path_base<span style="color:#a00">}</span><span style="color:#c30">&#34;</span>
   <span style="color:#069;font-weight:bold">end</span>
 
@@ -569,11 +569,11 @@ get <span style="color:#c30">&#34;</span><span style="color:#a00">#{</span>path\
 <p>(为什么有/v2？ 因为<code>ROUTE_PREFIX = &quot;/v2&quot;</code>)</p>
 
 <p>path_id定义在<code>lib/cloud_controller/rest_controller/model_controller.rb</code>中。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">path_id</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">path_id</span>
     <span style="color:#c30">&#34;</span><span style="color:#a00">#{</span>path<span style="color:#a00">}</span><span style="color:#c30">/:guid&#34;</span>
   <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>其中:guid为具名参数（关于具名参数&rsquo;named parameters&rsquo;的意思可参考博客<a href="http://www.sitepoint.com/just-do-it-learn-sinatra-i/">Just Do It: Learn Sinatra, Part One</a>），根据请求内容而定。 至此，结合前面的分析，define_standard_routes的调用结果就显而易见了。例如app.rb，会生成下面这些路由</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">post  <span style="color:#c30">&#34;/v2/apps&#34;</span>  create
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">post  <span style="color:#c30">&#34;/v2/apps&#34;</span>  create
 get  <span style="color:#c30">&#34;/va/apps&#34;</span>  enumerate
 get  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  read
 put  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  update
@@ -581,7 +581,7 @@ delete  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  delete</code><
 <p>create等操作定义在lib/cloud_controller/rest_controller/model_controller.rb中。</p>
 
 <p>define_routes接下来还要调用define_to_many_routes。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">define_to_many_routes</span>        
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">define_to_many_routes</span>        
     to_many_relationships<span style="color:#555">.</span>each <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span><span style="color:#366">name</span>, <span style="color:#069">attr</span><span style="color:#555">|</span>
      
       get <span style="color:#c30">&#34;</span><span style="color:#a00">#{</span>path_id<span style="color:#a00">}</span><span style="color:#c30">/</span><span style="color:#a00">#{</span><span style="color:#366">name</span><span style="color:#a00">}</span><span style="color:#c30">&#34;</span> <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>api, <span style="color:#366">id</span><span style="color:#555">|</span>
@@ -598,7 +598,7 @@ delete  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  delete</code><
     <span style="color:#069;font-weight:bold">end</span>
   <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>如果说define_standard_routes用来解析由path和path_id定义的路由，那么define_to_many_routes就是用来解析通过to_many定义的路由。 以<code>lib/cloud_controller/api/space.rb</code>为例，其中有一段</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">define_attributes <span style="color:#069;font-weight:bold">do</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">define_attributes <span style="color:#069;font-weight:bold">do</span>
   attribute  <span style="color:#fc3">:name</span>,            <span style="color:#366">String</span>
   to_one     <span style="color:#fc3">:organization</span>
   to_many    <span style="color:#fc3">:developers</span>
@@ -610,7 +610,7 @@ delete  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  delete</code><
   to_many    <span style="color:#fc3">:app_events</span>
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>当启动时执行到这里时，就会调用define_attributes方法。define_attributes定义在lib/cloud_controller/rest_controller/model_controller.rb中</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">define_attributes</span>(<span style="color:#555">&amp;</span>blk)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">define_attributes</span>(<span style="color:#555">&amp;</span>blk)
     k <span style="color:#555">=</span> <span style="color:#360">Class</span><span style="color:#555">.</span>new <span style="color:#069;font-weight:bold">do</span>
       <span style="color:#069">include</span> <span style="color:#360">ControllerDSL</span>
     <span style="color:#069;font-weight:bold">end</span>
@@ -618,18 +618,18 @@ delete  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  delete</code><
     k<span style="color:#555">.</span>new(<span style="color:#366">self</span>)<span style="color:#555">.</span>instance_eval_r(<span style="color:#555">&amp;</span>blk)
   <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>于是会执行attribute，to_one和to_many这些方法。其中to_many定义在<code>lib\cloud_controller\rest_controller\controller_dsl.rb</code>中。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">to_many</span>(<span style="color:#366">name</span>, opts <span style="color:#555">=</span> {})
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">to_many</span>(<span style="color:#366">name</span>, opts <span style="color:#555">=</span> {})
   to_many_relationships<span style="color:#555">[</span><span style="color:#366">name</span><span style="color:#555">]</span> <span style="color:#555">=</span> <span style="color:#360">ToManyAttribute</span><span style="color:#555">.</span>new(<span style="color:#366">name</span>, opts)
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>对于space.rb中的to_many :apps来说，展开为</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">to_many_relationships<span style="color:#555">[</span><span style="color:#c30">&#34;:apps&#34;</span><span style="color:#555">]</span> <span style="color:#555">=</span> <span style="color:#360">ToManyAttribute</span><span style="color:#555">.</span>new(<span style="color:#c30">&#34;:apps&#34;</span>, opts)</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">to_many_relationships<span style="color:#555">[</span><span style="color:#c30">&#34;:apps&#34;</span><span style="color:#555">]</span> <span style="color:#555">=</span> <span style="color:#360">ToManyAttribute</span><span style="color:#555">.</span>new(<span style="color:#c30">&#34;:apps&#34;</span>, opts)</code></pre></div>
 <p>也就是新建一个类，添加到to_many_relationships中。根据上下文，to_many_relationships是一个Array或一个Hash结构。</p>
 
 <p>执行到define_to_many_routes时，each后的参数name就是apps。api和id是路由范式中的具名参数。</p>
 
 <p>以路由<code>&quot;#{path_id}/#{name}&quot;</code>为例，path_id中包括两个变量，如果一个请求和该路由匹配，则第一个变量的实际值将赋给api，第二个变量的实际值赋给id。在另外两个路由范式中，:other_id代表第三个变量。第一个变量是什么还不知道，但通过测试可知，:guid部分的内容会被赋给id，那么第一个具名参数一定在path_id中。而api在运行过程中代表一个类的实例。例如，在启动时一个路由最终展开为<code>#{path_id} /v2/spaces/:guid</code>。当一个URL匹配该路由时，参数值如下</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">api<span style="color:#555">=</span><span style="color:#09f;font-style:italic">#</span>
-<span style="color:#366">id</span><span style="color:#555">=</span><span style="color:#f60">81243e10</span><span style="color:#555">-</span><span style="color:#f60">9</span>b28<span style="color:#555">-</span><span style="color:#f60">411</span>e<span style="color:#555">-</span><span style="color:#f60">9</span>ccf<span style="color:#555">-</span><span style="color:#f60">524</span>ab15ce37c
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">api<span style="color:#555">=</span><span style="color:#09f;font-style:italic">#</span>
+<span style="color:#366">id</span><span style="color:#555">=</span><span style="color:#f60">81243</span>e10<span style="color:#555">-</span><span style="color:#f60">9</span>b28<span style="color:#555">-</span><span style="color:#f60">411</span>e<span style="color:#555">-</span><span style="color:#f60">9</span>ccf<span style="color:#555">-</span><span style="color:#f60">524</span>ab15ce37c
 <span style="color:#09f;font-style:italic">#{name}=apps</span></code></pre></div>
 <p>通过define_standard_routes定义的路由，其具名参数放在*args中，数量可以是一个。</p>
 
@@ -642,7 +642,7 @@ delete  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  delete</code><
 <p><code>PUT /v2/apps/:guid?stage_async=true</code></p>
 
 <p>通过前面的分析可知，该请求和一个通过define_standard_routes定义的路由匹配，并被<code>lib/cloud_controller/rest_controller/model_controller.rb</code>的update方法处理。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">update</span>(<span style="color:#366">id</span>)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">update</span>(<span style="color:#366">id</span>)
       logger<span style="color:#555">.</span>debug <span style="color:#c30">&#34;update: </span><span style="color:#a00">#{</span><span style="color:#366">id</span><span style="color:#a00">}</span><span style="color:#c30"> </span><span style="color:#a00">#{</span>request_attrs<span style="color:#a00">}</span><span style="color:#c30">&#34;</span>
       obj <span style="color:#555">=</span> find_id_and_validate_access(<span style="color:#fc3">:update</span>, <span style="color:#366">id</span>)
       json_msg <span style="color:#555">=</span> <span style="color:#366">self</span><span style="color:#555">.</span>class<span style="color:#555">::</span><span style="color:#360">UpdateMessage</span><span style="color:#555">.</span>decode(body)
@@ -665,11 +665,11 @@ delete  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  delete</code><
 <p>Sequel 是一个 Ruby 语言的对象映射框架（ORM），其子类Sequel::Model代表一种对象关系映射。而find_id_and_validate_access返回的Sequel::Model对象相当于数据库中的一行，:guid =&gt; id即是查询条件。</p>
 
 <p>obj.update_from_hash根据请求中body中的内容更新数据库。在操作前后分别调用了before_modify和after_modify方法，其中before_modify定义如下</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">before_modify</span>(app)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">before_modify</span>(app)
   app<span style="color:#555">.</span>stage_async <span style="color:#555">=</span> <span style="color:#c30">%w(1 true)</span><span style="color:#555">.</span>include?(params<span style="color:#555">[</span><span style="color:#c30">&#34;stage_async&#34;</span><span style="color:#555">]</span>)
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>根据put请求的内容，执行before_modify后app.stage_async会变为true。当update_from_hash这个事物成功后，会调用<code>lib/cloud_controller/models/app.rb</code>中的after_commit，其中涉及到对该标志位的检查。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">after_commit</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">after_commit</span>
     <span style="color:#069;font-weight:bold">super</span>
     react_to_saved_changes(previous_changes <span style="color:#555">||</span> {})
   <span style="color:#069;font-weight:bold">end</span>
@@ -683,7 +683,7 @@ delete  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  delete</code><
     <span style="color:#069;font-weight:bold">end</span>
   <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>在after_commit中调用react_to_saved_changes，执行数据库更新后应该做的一些操作。react_to_saved_changes首先检查changes这个参数，看其是否包含:state关键字。当app在数据库中的状态由stopped变为started时，changes会记录该变化，于是执行react_to_state_change。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">react_to_state_change</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">  <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">react_to_state_change</span>
     <span style="color:#069;font-weight:bold">if</span> started?
       stage_if_needed <span style="color:#069;font-weight:bold">do</span>
         <span style="color:#360">DeaClient</span><span style="color:#555">.</span>start(<span style="color:#366">self</span>)
@@ -695,7 +695,7 @@ delete  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  delete</code><
     <span style="color:#069;font-weight:bold">end</span>
   <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>react_to_state_change判断状态是不是“STARTED”，结果为真，于是执行if后的语句。如果需要，则先执行stage操作，然后调用DeaClient.start和send_droplet_updated_message。send_droplet_updated_message向nats中发送droplet.updated消息，DeaClient.start开始启动一个app的过程。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start</span>(app)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start</span>(app)
         start_instances_in_range(app, (<span style="color:#f60">0</span><span style="color:#555">...</span>app<span style="color:#555">.</span>instances))
         app<span style="color:#555">.</span>routes_changed <span style="color:#555">=</span> <span style="color:#069">false</span>
       <span style="color:#069;font-weight:bold">end</span>
@@ -993,7 +993,7 @@ delete  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  delete</code><
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -1246,6 +1246,19 @@ delete  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  delete</code><
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -1267,19 +1280,6 @@ delete  <span style="color:#c30">&#34;/v2/apps/:guid&#34;</span>  delete</code><
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

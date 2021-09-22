@@ -18,7 +18,7 @@
   
   <meta name="description" content="Blue-Green Deployments on Cloud Foundry (利用CloudFoundry实现蓝绿发布)">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -220,7 +220,7 @@
 <p>We’ll begin with a basic Spring application named ms-spr-demo. This app takes users to a simple web page announcing the ubiquitous “Hello World!” message. We’ll utilize the cf command-line interface to push the application:</p>
 
 <p><strong>这里先向CF PUSH一个很简单的打印“Hello World”的应用：</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cf push --path build/libs/cf-demo.war  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cf push --path build/libs/cf-demo.war  
 Name&gt; ms-spr-demo  
 
 Instances&gt; <span style="color:#f60">1</span>  
@@ -290,12 +290,12 @@ OK  </code></pre></div>
 Next, we make a slight change to our application. Rather that saying “Hello World!” we decide to make it say “Goodbye World!” We build a new war file for the application. Rather than letting <code>cf</code> prompt us this time, we’ll make use of the <code>manifest.yml</code> file that we saved from our previous push. However, we’ll rename the application and provide a new route. Take a look:</p>
 
 <p><strong>接下来，我们对应用源码做了修改，使之打印“Goodbye World”，然后使用第一次部署时生成的<code>manifest.yml</code>来进行PUSH，不过，这一次我们将源码部署成一个新应用并映射了新域名：</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#555">---</span> <span style="color:#fc3">applications</span>: <span style="color:#555">-</span> <span style="color:#366">name</span>: ms<span style="color:#555">-</span>spr<span style="color:#555">-</span>demo<span style="color:#555">-</span>green   <span style="color:#fc3">memory</span>: <span style="color:#f60">512</span>M   <span style="color:#fc3">instances</span>: <span style="color:#f60">1</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#555">---</span> <span style="color:#fc3">applications</span>: <span style="color:#555">-</span> <span style="color:#366">name</span>: ms<span style="color:#555">-</span>spr<span style="color:#555">-</span>demo<span style="color:#555">-</span>green   <span style="color:#fc3">memory</span>: <span style="color:#f60">512</span>M   <span style="color:#fc3">instances</span>: <span style="color:#f60">1</span>
 <span style="color:#fc3">url</span>: ms<span style="color:#555">-</span>spr<span style="color:#555">-</span>demo<span style="color:#555">-</span>green<span style="color:#555">.</span>cfapps<span style="color:#555">.</span>io   <span style="color:#fc3">path</span>: build<span style="color:#555">/</span>libs<span style="color:#555">/</span>cf<span style="color:#555">-</span>demo<span style="color:#555">.</span>war </code></pre></div>
 <p>As you can see, we’re calling our new application version <code>ms-spr-demo-green</code> and we’re mapping it to the URL <code>ms-spr-demo-green.cfapps.io</code>. Let’s push the application:</p>
 
 <p><strong>下面开始PUSH：</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#360">Using</span> manifest file manifest<span style="color:#555">.</span>yml  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#360">Using</span> manifest file manifest<span style="color:#555">.</span>yml  
 
 <span style="color:#360">Creating</span> ms<span style="color:#555">-</span>spr<span style="color:#555">-</span>demo<span style="color:#555">-</span>green<span style="color:#555">...</span> <span style="color:#360">OK</span>  
 
@@ -346,7 +346,7 @@ Next, we make a slight change to our application. Rather that saying “Hello Wo
 <p>Now it’s time for the magic to happen. We’ll map our original URL route (<code>ms-spr-demo.cfapps.io</code>) to our “green” instance. This is accomplished very simply by using <code>cf</code>:</p>
 
 <p><strong>这时，我们将老应用（蓝色）的域名ms-spr-demo.cfapps.io同时映射到新应用（绿色）上：</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"> cf map --app ms-spr-demo-green --host ms-spr-demo --domain cfapps.io Binding ms-spr-demo.cfapps.io to ms-spr-demo-green... OK </code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"> cf map --app ms-spr-demo-green --host ms-spr-demo --domain cfapps.io Binding ms-spr-demo.cfapps.io to ms-spr-demo-green... OK </code></pre></div>
 <p>The CF router immediately begins to load balance requests between each instance of the application, as shown here:</p>
 
 <p><strong>此时的域名映射如下图所示：</strong>
@@ -357,7 +357,7 @@ Next, we make a slight change to our application. Rather that saying “Hello Wo
 <p>Now our router will send requests to <code>ms-spr-demo.cfapps.io</code> to both instances of the application, while <code>ms-spr-demo-green.cfapps.io</code> only services the “green” instance. Once we determine that all is well, it’s time to stop routing requests to the “blue” instance. This is just as simple using <code>cf</code>:</p>
 
 <p><strong>这样，ms-spr-demo.cfapps.io将流量导向了蓝绿两个应用，而ms-spr-demo-green.cfapps.io则只将流量导向新部署的绿色应用。这也是我们对绿色应用进行测试和观察的好时机（我们还可以调节蓝色和绿色应用的实例数目来进行流量分配比），一旦我们能够确定绿色应用能够正常的对外服务，接可以将蓝色应用实例切断了：</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"> cf unmap --url ms-spr-demo.cfapps.io --app ms-spr-demo Unbinding ms-spr-demo.cfapps.io from ms-spr-demo... OK </code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"> cf unmap --url ms-spr-demo.cfapps.io --app ms-spr-demo Unbinding ms-spr-demo.cfapps.io from ms-spr-demo... OK </code></pre></div>
 <p>Our “blue” instance is now no longer receiving any web traffic:
 <center>
 <img src="https://res.cloudinary.com/rachel725/image/upload/v1605616361/sel/CF-BG-4_vkjlr5.png" alt="CF-BG-4" style="zoom:100%;" />
@@ -624,7 +624,7 @@ Next, we make a slight change to our application. Rather that saying “Hello Wo
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -877,6 +877,19 @@ Next, we make a slight change to our application. Rather that saying “Hello Wo
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -898,19 +911,6 @@ Next, we make a slight change to our application. Rather that saying “Hello Wo
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

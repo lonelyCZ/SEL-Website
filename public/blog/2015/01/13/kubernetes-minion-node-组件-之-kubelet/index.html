@@ -18,7 +18,7 @@
   
   <meta name="description" content="Kubelet是Google Kubernetes 集群minion工作节点上的一个重要组件.本文将作者阅读代码和亲身的使用经验相结合带你深入理解kubelet. 因为kubernetes代码处在火热迭代开发中,版本日新月异, 本文的源代码来自2014年12月22日github上kubernetes的master最新代码, commit id 119fe37f064905d, 由于kubelet代码量大,变量多,所以文中展示的代码有删节,省略的部分用…表示.">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -232,7 +232,7 @@
 <li>HTTP URL 通过命令行参数传递HTTP URL参数。 此端点每20秒检查（也可配置）, 通过查询获得容器清单.</li>
 
 <li><p>Etcd服务器 Kubelet发现etcd服务器并watch相关的key。watch的etcd key是 /registry/nodes/$（hostname -f）。由于这是一种etcd watch机制，注意到改变并采取相应的行动非常迅速. Kubelet 的组成元素可以从如下代码-Kubelet结构体定义看出:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Kubelet 结构体描述了kubelet使用到的重要元素.
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Kubelet 结构体描述了kubelet使用到的重要元素.
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">type</span> Kubelet <span style="color:#069;font-weight:bold">struct</span> {
     hostname              <span style="color:#078;font-weight:bold">string</span>
     dockerClient          dockertools.DockerInterface
@@ -261,7 +261,7 @@
 </ol>
 
 <p>其中还有一个配置Kubelet的结构体,名为KubeletConfig, 他从启动命令行参数构造,最后作为启动kubelet的参数传入,源代码如下,具体可以参见后文的描述.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> KubeletConfig <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> KubeletConfig <span style="color:#069;font-weight:bold">struct</span> {
         EtcdClient              tools.EtcdClient
         DockerClient            dockertools.DockerInterface
         CAdvisorPort            <span style="color:#078;font-weight:bold">uint</span>
@@ -280,7 +280,7 @@
 <h1 id="2-kubelet源码分析">2 Kubelet源码分析</h1>
 
 <p>下面介绍一些kubelet里用到的关键的数据结构和代码段 , 对于kubernetes的新手, 这个还是很有帮助的, 这也给需要hack kubelet的人提供了代码的入口. 代码入口定义在cmd/kubelet/kubelet.go的main函数, 如下:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">main</span>() {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">main</span>() {
         flag.<span style="color:#c0f">Parse</span>()
         util.<span style="color:#c0f">InitLogs</span>()
         <span style="color:#069;font-weight:bold">defer</span> util.<span style="color:#c0f">FlushLogs</span>()
@@ -309,7 +309,7 @@
 </span><span style="color:#09f;font-style:italic"></span>        <span style="color:#069;font-weight:bold">select</span> {}
     }</code></pre></div>
 <p>使用默认的参数和用户自定义的命令行启动参数构造好KubeletConfig这个结构体后, 就调用standalone.RunKubelet(&amp;kcfg)进行真正的server端工作. RunKubelet函数定义在pkg/standalone/standalone.go中, 源码如下:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">RunKubelet</span>(kcfg <span style="color:#555">*</span>KubeletConfig) {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">RunKubelet</span>(kcfg <span style="color:#555">*</span>KubeletConfig) {
         kubelet.<span style="color:#c0f">SetupEventSending</span>(kcfg.AuthPath, kcfg.ApiServerList)
         
         <span style="color:#555">...</span>
@@ -326,7 +326,7 @@
         }
     }</code></pre></div>
 <p>其中重要的函数有makePodSourceConfig(kcfg), 他的源代码如下:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">makePodSourceConfig</span>(kc <span style="color:#555">*</span>KubeletConfig) <span style="color:#555">*</span>config.PodConfig {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">makePodSourceConfig</span>(kc <span style="color:#555">*</span>KubeletConfig) <span style="color:#555">*</span>config.PodConfig {
         
         cfg <span style="color:#555">:=</span> config.<span style="color:#c0f">NewPodConfig</span>(config.PodConfigNotificationSnapshotAndUpdates)
     
@@ -347,7 +347,7 @@
 </ol>
 
 <p>在这里我们使kubelet采用etcd server获得pod配置参数信息, 这种模式最常见, 还要注意的是NewSourceEtcd函数的参数是cfg.Channel(kubelet.EtcdSource)函数, 他不仅仅返回一个chan&lt;- interface{} 供NewSourceEtcd使用, 背后还进行了大量额外的操作, 它调用了Mux的Channel(),源代码如下:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// 该函数返回一个可以接收配置信息更新的 channel, 相同的源只会返回同一个channel, Mux结构内部存有一个map数据结构即sources
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// 该函数返回一个可以接收配置信息更新的 channel, 相同的源只会返回同一个channel, Mux结构内部存有一个map数据结构即sources
 </span><span style="color:#09f;font-style:italic"></span>     <span style="color:#09f;font-style:italic">// 记录源名字和channel 的匹配信息
 </span><span style="color:#09f;font-style:italic"></span>    <span style="color:#069;font-weight:bold">func</span> (m <span style="color:#555">*</span>Mux) <span style="color:#c0f">Channel</span>(source <span style="color:#078;font-weight:bold">string</span>) <span style="color:#069;font-weight:bold">chan</span> <span style="color:#069;font-weight:bold">interface</span>{} {
         <span style="color:#069;font-weight:bold">if</span> <span style="color:#366">len</span>(source) <span style="color:#555">==</span> <span style="color:#f60">0</span> {
@@ -370,7 +370,7 @@
         }
     }</code></pre></div>
 <p>除了返回channel以外, 他的额外操作是启动了一个goroutine不停地调用如上的listen函数, 他监听newChannel这一Channel, 一旦该channel有可用的信息, 就调用Merge(source, update), 它的源代码如下,定义在pkg/kubelet/config/config.go中:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (s <span style="color:#555">*</span>podStorage) <span style="color:#c0f">Merge</span>(source <span style="color:#078;font-weight:bold">string</span>, change <span style="color:#069;font-weight:bold">interface</span>{}) <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (s <span style="color:#555">*</span>podStorage) <span style="color:#c0f">Merge</span>(source <span style="color:#078;font-weight:bold">string</span>, change <span style="color:#069;font-weight:bold">interface</span>{}) <span style="color:#078;font-weight:bold">error</span> {
         s.updateLock.<span style="color:#c0f">Lock</span>()
         <span style="color:#069;font-weight:bold">defer</span> s.updateLock.<span style="color:#c0f">Unlock</span>()
     
@@ -390,7 +390,7 @@
 <p>该函数综合各种source的pod配置变化信息, 并调用merge(source,change)函数, 并根据不同的mode , 把更新信息发送到s.updates channel. 在这里就用到了之前所说的PodConfigNotificationSnapshotAndUpdates参数.</p>
 
 <p>回到之前所说的config.NewSourceEtcd方法, 这里面很重要的一个数据结构是sourceEtcd结构体和相关的操作NewSourceEtcd()和Run()方法, 源代码如下:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> sourceEtcd <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> sourceEtcd <span style="color:#069;font-weight:bold">struct</span> {
         key     <span style="color:#078;font-weight:bold">string</span>
         helper  tools.EtcdHelper
         updates <span style="color:#069;font-weight:bold">chan</span><span style="color:#555">&lt;-</span> <span style="color:#069;font-weight:bold">interface</span>{}
@@ -431,14 +431,14 @@
 <p>NewSourceEtcd的功能是启动一个goroutine, watch相应的key如/registry/nodes/127.0.0.1/boundpod. 使用etcd 的watch机制使得相应的value变化可以第一时间通过eventToPods函数将其更新到sourceEtcd 里的 updates 这个channel. 其中etcd相关的函数如s.helper.Watch定义在pkg/tools下, 里面封装了非常详尽的高级etcd操作.</p>
 
 <p>我们查看一个运行在ubuntu server的kubernetes 集群的kubelet的log. 它使用本地的127.0.0.1:4001 的etcd client, 并watch /registry/nodes/127.0.0.1/boundpods 这个key.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">I0105 <span style="color:#f60">14</span>:<span style="color:#f60">02</span>:<span style="color:#f60">22.112762</span>   <span style="color:#f60">11455</span> standalone.<span style="color:#069;font-weight:bold">go</span>:<span style="color:#f60">220</span>] Watching <span style="color:#069;font-weight:bold">for</span> etcd configs at [http:<span style="color:#09f;font-style:italic">//127.0.0.1:4001]
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">I0105 <span style="color:#f60">14</span>:<span style="color:#f60">02</span>:<span style="color:#f60">22.112762</span>   <span style="color:#f60">11455</span> standalone.<span style="color:#069;font-weight:bold">go</span>:<span style="color:#f60">220</span>] Watching <span style="color:#069;font-weight:bold">for</span> etcd configs at [http:<span style="color:#09f;font-style:italic">//127.0.0.1:4001]
 </span><span style="color:#09f;font-style:italic"></span>I0105 <span style="color:#f60">14</span>:<span style="color:#f60">02</span>:<span style="color:#f60">22.113057</span>   <span style="color:#f60">11455</span> etcd.<span style="color:#069;font-weight:bold">go</span>:<span style="color:#f60">58</span>] Watching etcd <span style="color:#069;font-weight:bold">for</span> <span style="color:#555">/</span>registry<span style="color:#555">/</span>nodes<span style="color:#555">/</span><span style="color:#f60">127.0.0.1</span><span style="color:#555">/</span>boundpods</code></pre></div>
 <p>简而言之,可以理解为通过etcd获得理想的pod状态信息, 并将其更新到s.updates 这个channel里, 它是一个只写的interface channel, 里面实际传送的是kubelet.PodUpdate这个结构体. 我们可以从log 里一窥究竟,可以发现里面包含了非常详尽的pod信息.我们发现这个名为podtest的pod内含master1 和master2 两个容器, 信息包含容器的镜像名称, 暴露端口信息, 容器volume,还有name全部大写的环境变量 信息如KUBERNETES_SERVICE_HOST.由于log信息量大, 已用&rdquo;&hellip;&ldquo;取代重复部分.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">I0105 <span style="color:#f60">14</span>:<span style="color:#f60">02</span>:<span style="color:#f60">22.161784</span>   <span style="color:#f60">11455</span> etcd.<span style="color:#069;font-weight:bold">go</span>:<span style="color:#f60">81</span>] Received state from etcd watch: 
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">I0105 <span style="color:#f60">14</span>:<span style="color:#f60">02</span>:<span style="color:#f60">22.161784</span>   <span style="color:#f60">11455</span> etcd.<span style="color:#069;font-weight:bold">go</span>:<span style="color:#f60">81</span>] Received state from etcd watch: 
 [ <span style="color:#555">...</span> Containers: [ {Name:master1 Image:<span style="color:#f60">10.10.103.215</span>:<span style="color:#f60">5000</span><span style="color:#555">/</span>redis Command:[] WorkingDir: Ports:[{Name: HostPort:<span style="color:#f60">6388</span> ContainerPort:<span style="color:#f60">6379</span> Protocol:TCP HostIP:}] 
 Env:[{Name:KUBERNETES_SERVICE_HOST Value:<span style="color:#f60">11.1.1.196</span>} <span style="color:#555">...</span>] Memory:<span style="color:#f60">0</span> CPU:<span style="color:#f60">100</span> VolumeMounts:[]<span style="color:#555">...</span>}</code></pre></div>
 <p>再回到代码调用的最顶层, MakePodSourceConfig之后调用createAndInitKubelet函数构造真正的kubelet结构体, 并同时启动goroutine进行容器和镜像的garbageCollection, cAdvisor监控并初始化HealthChecking包括TCP, HTTP, EXEC健康检查. 最后使用startKubelet()函数启动 Kubelet server.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">startKubelet</span>(k <span style="color:#555">*</span>kubelet.Kubelet, cfg <span style="color:#555">*</span>config.PodConfig, kc <span style="color:#555">*</span>KubeletConfig) {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">startKubelet</span>(k <span style="color:#555">*</span>kubelet.Kubelet, cfg <span style="color:#555">*</span>config.PodConfig, kc <span style="color:#555">*</span>KubeletConfig) {
             <span style="color:#09f;font-style:italic">// start the kubelet
 </span><span style="color:#09f;font-style:italic"></span>            <span style="color:#069;font-weight:bold">go</span> util.<span style="color:#c0f">Forever</span>(<span style="color:#069;font-weight:bold">func</span>() { k.<span style="color:#c0f">Run</span>(cfg.<span style="color:#c0f">Updates</span>()) }, <span style="color:#f60">0</span>)
     
@@ -450,7 +450,7 @@ Env:[{Name:KUBERNETES_SERVICE_HOST Value:<span style="color:#f60">11.1.1.196</sp
         }
     }</code></pre></div>
 <p>其中第一个goroutine 后台持续运行k.Run函数, 他的参数是cfg.Updates()函数的返回值, 他包含最新的来自etcd的理想pod配置信息. 经过其他一些设置, 最终调用如下面的syncLoop函数,代码如下. 他的作用是处理pod配置信息的变化, 并通过handler.SyncPods(kl.pods)函数保持实际minion的运行状态和期望状态一致. 其中期望状态就是kl.pods参数. SyncHandler是一个golang interface, 实际传入的参数是kubelet, 它定义了SyncPods方法. 源代码如下, 定义在pkg/kubelet/kubelet.go里.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (kl <span style="color:#555">*</span>Kubelet) <span style="color:#c0f">syncLoop</span>(updates <span style="color:#555">&lt;-</span><span style="color:#069;font-weight:bold">chan</span> PodUpdate, handler SyncHandler) {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (kl <span style="color:#555">*</span>Kubelet) <span style="color:#c0f">syncLoop</span>(updates <span style="color:#555">&lt;-</span><span style="color:#069;font-weight:bold">chan</span> PodUpdate, handler SyncHandler) {
         <span style="color:#069;font-weight:bold">for</span> {
             <span style="color:#069;font-weight:bold">select</span> {
             <span style="color:#069;font-weight:bold">case</span> u <span style="color:#555">:=</span> <span style="color:#555">&lt;-</span>updates:
@@ -484,7 +484,7 @@ Env:[{Name:KUBERNETES_SERVICE_HOST Value:<span style="color:#f60">11.1.1.196</sp
 <p>该函数比较复杂, 具体调用syncPod()函数完成最后的任务. 源代码定义在pkg/kubelet/kubelet.go中. 后文再具体介绍. 另外一个goroutine是kubelet.ListenAndServeKubeletServer(k, net.IP(kc.Address), kc.Port, kc.EnableDebuggingHandlers)这个函数, 他初始化一个自定义路由的http server用来接收外界发给他的HTTP 请求,包括外界对podInfo的查询, 这台minion上绑定的pods的信息等. 　　　</p>
 
 <p>其中具体的handler处理函数可以接收外界对podInfo的查询, 这台minion上绑定的pods的信息等都定义在pkg/kubelet/server.go中, 具体的安装Handler函数源代码如下.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">　<span style="color:#09f;font-style:italic">// 安装相应uri的处理函数
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">　<span style="color:#09f;font-style:italic">// 安装相应uri的处理函数
 </span><span style="color:#09f;font-style:italic"></span>    <span style="color:#069;font-weight:bold">func</span> (s <span style="color:#555">*</span>Server) <span style="color:#c0f">InstallDefaultHandlers</span>() {
         healthz.<span style="color:#c0f">InstallHandler</span>(s.mux)
         s.mux.<span style="color:#c0f">HandleFunc</span>(<span style="color:#c30">&#34;/podInfo&#34;</span>, s.handlePodInfoOld)
@@ -503,7 +503,7 @@ Env:[{Name:KUBERNETES_SERVICE_HOST Value:<span style="color:#f60">11.1.1.196</sp
 <h1 id="3-kubelet-启动docker-container-实例分析">3 Kubelet 启动Docker container 实例分析</h1>
 
 <p>这里我以启动一个内含redis-master和一个sshd两个容器的pod为例. manifest 如下:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">{
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">{
       <span style="color:#c30">&#34;id&#34;</span>: <span style="color:#c30">&#34;podtest&#34;</span>,
       <span style="color:#c30">&#34;kind&#34;</span>: <span style="color:#c30">&#34;Pod&#34;</span>,
       <span style="color:#c30">&#34;apiVersion&#34;</span>: <span style="color:#c30">&#34;v1beta1&#34;</span>,
@@ -534,7 +534,7 @@ Env:[{Name:KUBERNETES_SERVICE_HOST Value:<span style="color:#f60">11.1.1.196</sp
       }
     }</code></pre></div>
 <p>如前文所说当kubelet通过etcd发现新的podtest pod启动请求时, 后端log如下所示.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">I0105 <span style="color:#f60">14</span>:<span style="color:#f60">02</span>:<span style="color:#f60">22.161784</span>   <span style="color:#f60">11455</span> etcd.<span style="color:#069;font-weight:bold">go</span>:<span style="color:#f60">81</span>] Received state from etcd watch: [ {TypeMeta:{Kind: APIVersion:} ObjectMeta:{Name:podtest Namespace:<span style="color:#069;font-weight:bold">default</span> SelfLink:<span style="color:#555">/</span>api<span style="color:#555">/</span>v1beta1<span style="color:#555">/</span>boundPods<span style="color:#555">/</span>podtest UID:<span style="color:#f60">569</span>fcaa3<span style="color:#555">-</span><span style="color:#f60">940</span>a<span style="color:#555">-</span><span style="color:#f60">11e4</span><span style="color:#555">-</span>a3b2<span style="color:#555">-</span><span style="color:#f60">000</span>c2992ee7a ResourceVersion: CreationTimestamp:<span style="color:#f60">2015</span><span style="color:#555">-</span><span style="color:#f60">01</span><span style="color:#555">-</span><span style="color:#f60">04</span> <span style="color:#f60">20</span>:<span style="color:#f60">08</span>:<span style="color:#f60">05</span> <span style="color:#555">+</span><span style="color:#f60">0800</span> CST Labels:<span style="color:#069;font-weight:bold">map</span>[] Annotations:<span style="color:#069;font-weight:bold">map</span>[]} Spec:{Volumes:[] 
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">I0105 <span style="color:#f60">14</span>:<span style="color:#f60">02</span>:<span style="color:#f60">22.161784</span>   <span style="color:#f60">11455</span> etcd.<span style="color:#069;font-weight:bold">go</span>:<span style="color:#f60">81</span>] Received state from etcd watch: [ {TypeMeta:{Kind: APIVersion:} ObjectMeta:{Name:podtest Namespace:<span style="color:#069;font-weight:bold">default</span> SelfLink:<span style="color:#555">/</span>api<span style="color:#555">/</span>v1beta1<span style="color:#555">/</span>boundPods<span style="color:#555">/</span>podtest UID:<span style="color:#f60">569</span>fcaa3<span style="color:#555">-</span><span style="color:#f60">940</span>a<span style="color:#555">-</span><span style="color:#f60">11e4</span><span style="color:#555">-</span>a3b2<span style="color:#555">-</span><span style="color:#f60">000</span>c2992ee7a ResourceVersion: CreationTimestamp:<span style="color:#f60">2015</span><span style="color:#555">-</span><span style="color:#f60">01</span><span style="color:#555">-</span><span style="color:#f60">04</span> <span style="color:#f60">20</span>:<span style="color:#f60">08</span>:<span style="color:#f60">05</span> <span style="color:#555">+</span><span style="color:#f60">0800</span> CST Labels:<span style="color:#069;font-weight:bold">map</span>[] Annotations:<span style="color:#069;font-weight:bold">map</span>[]} Spec:{Volumes:[] 
     Containers:[
        {Name:master1 Image:<span style="color:#f60">10.10.103.215</span>:<span style="color:#f60">5000</span><span style="color:#555">/</span>redis <span style="color:#555">...</span>} 
        {Name:master2 Image:<span style="color:#f60">10.10.103.215</span>:<span style="color:#f60">5000</span><span style="color:#555">/</span>sshd <span style="color:#555">...</span>]
@@ -545,7 +545,7 @@ Env:[{Name:KUBERNETES_SERVICE_HOST Value:<span style="color:#f60">11.1.1.196</sp
 <li>首先先通过docker client 查询目前正在运行的所用容器的信息, 当然这里可能包含非kubelet manage的用户自己启动的容器. 　　　</li>
 
 <li><p>之后遍历pods 查看是否需要有要启动的容器, 代码如下图所示</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// 检测是否有容器需要启动
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// 检测是否有容器需要启动
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">for</span> ix <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">range</span> pods {
     pod <span style="color:#555">:=</span> <span style="color:#555">&amp;</span>pods[ix]
     podFullName <span style="color:#555">:=</span> <span style="color:#c0f">GetPodFullName</span>(pod)
@@ -570,7 +570,7 @@ Env:[{Name:KUBERNETES_SERVICE_HOST Value:<span style="color:#f60">11.1.1.196</sp
 </ol>
 
 <p>其中重要的一个参数netowrkContainerName是一个string, 值为”net”, 它使用的image的名字是 kubernetes/pause. 该image是kubernetes独有的一个镜像, 每启动一个pod都会附加启动这样一个容器, 并且他先于你需要真正提供服务的容器运行. 可以使用docker image 命令查看kubernetes/pause的具体信息, 可以看到他的大小只有200KB+, 是非常非常小的一个镜像.他里面只有一个汇编程序/pause 在容器运行时运行, 他的作用就只是简单的等待. 由他接管了整个pod的网络.</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">vcap@ubuntu:~$ docker images
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">vcap@ubuntu:~$ docker images
 
 REPOSITORY                TAG    IMAGE ID     CREATED    VIRTUAL SIZE
 
@@ -582,7 +582,7 @@ kubernetes/pause         latest 6c4579af347b  <span style="color:#f60">5</span> 
 
 kubernetes/pause         go     6c4579af347b  <span style="color:#f60">5</span> months ago 239.8 kB</code></pre></div>
 <p>之后再把提供服务的用户需要的容器加入desiredContainers这个map数据结构里. 再运行kubelet里的podWorkers.Run方法,源代码如下:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (self <span style="color:#555">*</span>podWorkers) <span style="color:#c0f">Run</span>(podFullName <span style="color:#078;font-weight:bold">string</span>, action <span style="color:#069;font-weight:bold">func</span>()) {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (self <span style="color:#555">*</span>podWorkers) <span style="color:#c0f">Run</span>(podFullName <span style="color:#078;font-weight:bold">string</span>, action <span style="color:#069;font-weight:bold">func</span>()) {
         self.lock.<span style="color:#c0f">Lock</span>()
         <span style="color:#069;font-weight:bold">defer</span> self.lock.<span style="color:#c0f">Unlock</span>()
     
@@ -614,7 +614,7 @@ kubernetes/pause         go     6c4579af347b  <span style="color:#f60">5</span> 
 <li>调用docker client下载容器镜像.</li>
 
 <li><p>调用 docker client 运行容器, 使用的函数是kubelet 的 runContainer().源代码如下:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">containerID, err <span style="color:#555">:=</span> kl.<span style="color:#c0f">runContainer</span>(pod, <span style="color:#555">&amp;</span>container, podVolumes, <span style="color:#c30">&#34;container:&#34;</span><span style="color:#555">+</span><span style="color:#366">string</span>(netID))
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">containerID, err <span style="color:#555">:=</span> kl.<span style="color:#c0f">runContainer</span>(pod, <span style="color:#555">&amp;</span>container, podVolumes, <span style="color:#c30">&#34;container:&#34;</span><span style="color:#555">+</span><span style="color:#366">string</span>(netID))
 <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
        
     glog.<span style="color:#c0f">Errorf</span>(<span style="color:#c30">&#34;Error running pod %s container %s: %v&#34;</span>, podFullName, container.Name, err)
@@ -623,7 +623,7 @@ kubernetes/pause         go     6c4579af347b  <span style="color:#f60">5</span> 
 </ol>
 
 <p><strong>这里很重要的一点是这个容器和pod net容器共用net namespace,如第四个参数所示</strong>. 其他的如端口映射或挂载volume设置都在runContainer()函数中定义.这里不再赘述. Pod 启动完毕使用 docker ps 看到结果如下,由于每行输出比较多,可能会有所混乱</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">vcap@ubuntu:~$ docker ps
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">vcap@ubuntu:~$ docker ps
     CONTAINER ID        IMAGE                             COMMAND                CREATED             STATUS              PORTS                                          NAMES
     5d1ad2fe030f        10.10.103.215:5000/redis:latest   <span style="color:#c30">&#34;redis-server /etc/r   19 hours ago        Up 19 hours                                                        k8s_master1.ffde9eab_podtest.default.etcd_569fcaa3-940a-11e4-a3b2-000c2992ee7a_fa7b90b4
 </span><span style="color:#c30">    b98b0802d38c        10.10.103.215:5000/sshd:latest    &#34;</span>/usr/sbin/sshd -D<span style="color:#c30">&#34;    19 hours ago        Up 19 hours                                                        k8s_master2.994d9dd9_podtest.default.etcd_569fcaa3-940a-11e4-a3b2-000c2992ee7a_1c28f740
@@ -892,7 +892,7 @@ kubernetes/pause         go     6c4579af347b  <span style="color:#f60">5</span> 
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -1145,6 +1145,19 @@ kubernetes/pause         go     6c4579af347b  <span style="color:#f60">5</span> 
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -1166,19 +1179,6 @@ kubernetes/pause         go     6c4579af347b  <span style="color:#f60">5</span> 
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

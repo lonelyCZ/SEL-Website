@@ -6,7 +6,11 @@
     <description>Recent content in service mesh on 浙大SEL实验室</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 11 Oct 2018 20:11:02 +0000</lastBuildDate><atom:link href="http://www.sel.zju.edu.cn/categories/service-mesh/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Thu, 11 Oct 2018 20:11:02 +0000</lastBuildDate>
+    
+	<atom:link href="http://www.sel.zju.edu.cn/categories/service-mesh/index.xml" rel="self" type="application/rss+xml" />
+    
+    
     <item>
       <title>knative serving开发环境搭建</title>
       <link>http://www.sel.zju.edu.cn/blog/2018/10/11/knative-serving%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/</link>

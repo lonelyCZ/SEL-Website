@@ -18,7 +18,7 @@
   
   <meta name="description" content="Service Account, Secrets和Security Contexts作为保证kubernetes集群Security的策略被引入，相关代码一直处于快速变更与迭代中。本文谨从design和初级实践的视角对其进行概略性的分析，以飨读者。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -283,14 +283,14 @@
 <h4 id="5-2-1-default-service-account"><strong>5.2.1 default service account</strong></h4>
 
 <p>每个namespace在创建时都会有一个default的service Account，如下所示</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get serviceAccounts --all-namespaces
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get serviceAccounts --all-namespaces
 NAMESPACE     NAME      SECRETS
 default       default   <span style="color:#f60">1</span>
 kube-system   default   <span style="color:#f60">1</span></code></pre></div>
 <h4 id="5-2-2-create-your-own-service-account"><strong>5.2.2 Create your own service Account</strong></h4>
 
 <p>用户可以方便地通过yaml文件等形式创建自己的serviceAccount，如</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cat &gt; /tmp/serviceaccount.yaml <span style="color:#c30">&lt;&lt;EOF
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cat &gt; /tmp/serviceaccount.yaml <span style="color:#c30">&lt;&lt;EOF
 </span><span style="color:#c30">apiVersion: v1
 </span><span style="color:#c30">kind: ServiceAccount
 </span><span style="color:#c30">metadata:
@@ -300,7 +300,7 @@ kube-system   default   <span style="color:#f60">1</span></code></pre></div>
 $ kubectl create -f /tmp/serviceaccount.yaml
 serviceaccounts/build-robot</code></pre></div>
 <p>通过`kubectl get &lt; resource &gt; -o yaml获取详细信息</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get serviceaccounts/build-robot -o yaml
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get serviceaccounts/build-robot -o yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -313,51 +313,51 @@ metadata:
 secrets:
 - name: build-robot-token-n0o98</code></pre></div>
 <p>可以看到，token（secret）被自动生成并ref了。如果在之后创建pod的时候ref这个自建的serviceAccount，在<code>spec.serviceAccount</code>中指定即可。 通过如下命令可以删除serviceAccount。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl delete serviceaccount/build-robot</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl delete serviceaccount/build-robot</code></pre></div>
 <h4 id="5-2-3adding-secrets-to-a-service-account"><strong>5.2.3Adding Secrets to a service account</strong></h4>
 
 <p>注意到，我们可以不使用serviceAccount自建的secrets，而是选用我们自己生成的secrets，这是一种consume secret的方式。 首先创建secret，<code>kubectl create -f secret.yaml</code></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">//secret.yaml<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Secret<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>test-secret<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">data</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">data-1</span>:<span style="color:#bbb"> </span>dmFsdWUtMQ0K<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">data-2</span>:<span style="color:#bbb"> </span>dmFsdWUtMg0KDQo=</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">//secret.yaml<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Secret<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>test-secret<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">data</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">data-1</span>:<span style="color:#bbb"> </span>dmFsdWUtMQ0K<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">data-2</span>:<span style="color:#bbb"> </span>dmFsdWUtMg0KDQo=</code></pre></div>
 <p>然后创建一个comsume该secret，<code>kubectl create -f serviceaccount.yaml</code></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">//serviceaccount.yaml<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ServiceAccount<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>build-robot<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">secrets</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>test-secret</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">//serviceaccount.yaml<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ServiceAccount<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>build-robot<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">secrets</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>test-secret</code></pre></div>
 <p>最后在pod的manifest中指定其serviceaccount，<code>kubectl create -f busybox4.yaml</code></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">//busybox4.yaml<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Pod<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>busybox4<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">containers</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">image</span>:<span style="color:#bbb"> </span>busybox<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">command</span>:<span style="color:#bbb">
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">//busybox4.yaml<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Pod<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>busybox4<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">containers</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">image</span>:<span style="color:#bbb"> </span>busybox<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">command</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">      </span>- sleep<span style="color:#bbb">
 </span><span style="color:#bbb">      </span>- <span style="color:#c30">&#34;3600&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">imagePullPolicy</span>:<span style="color:#bbb"> </span>IfNotPresent<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>busybox<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">volumeMounts</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>foo<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span>/var/run/secrets/kubernetes.io/serviceaccount<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">readOnly</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">restartPolicy</span>:<span style="color:#bbb"> </span>Always<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">serviceAccountName</span>:<span style="color:#bbb"> </span>build-robot<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">volumes</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>foo<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">secret</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">secretName</span>:<span style="color:#bbb"> </span>test-secret</code></pre></div>
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">imagePullPolicy</span>:<span style="color:#bbb"> </span>IfNotPresent<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>busybox<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">volumeMounts</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>foo<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span>/var/run/secrets/kubernetes.io/serviceaccount<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">readOnly</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">restartPolicy</span>:<span style="color:#bbb"> </span>Always<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">serviceAccountName</span>:<span style="color:#bbb"> </span>build-robot<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">volumes</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>foo<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">secret</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">secretName</span>:<span style="color:#bbb"> </span>test-secret</code></pre></div>
 <p>已了解如何创建一个引用自建secret的serviceaccount，但是如果在exsiting serviceaccount中添加引用，目前<a href="https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/user-guide/service-accounts.md">官方文档</a>mark it as TODO。笔者认为此用法应该与上例类似，但笔者采用这种方式consume secret时，serviceaccount似乎并不对该secret有维护作用。 Update:此用法确与上例类似，参见issue#12012，笔者后续会考虑对相关doc进行更新。</p>
 
 <h2 id="6-secrets"><strong>6. Secrets</strong></h2>
@@ -367,7 +367,7 @@ secrets:
 <h3 id="6-1-secrets类型一览"><strong>6.1 Secrets类型一览</strong></h3>
 
 <p>secret的类型目前有三种，如下所示</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> SecretType <span style="color:#078;font-weight:bold">string</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> SecretType <span style="color:#078;font-weight:bold">string</span>
 
 <span style="color:#069;font-weight:bold">const</span> (
     SecretTypeOpaque              SecretType = <span style="color:#c30">&#34;Opaque&#34;</span>                                 <span style="color:#09f;font-style:italic">// Opaque (arbitrary data; default)
@@ -375,50 +375,50 @@ secrets:
 </span><span style="color:#09f;font-style:italic"></span>    SecretTypeDockercfg           SecretType = <span style="color:#c30">&#34;kubernetes.io/dockercfg&#34;</span>                <span style="color:#09f;font-style:italic">// Docker registry auth
 </span><span style="color:#09f;font-style:italic"></span>)</code></pre></div>
 <p>Opaque类型是默认的用户自建类型，即任意string（实际上也并不是十分任意，<code>data</code> label的key/value必须满足特定的要求：Each key must be a valid DNS_SUBDOMAIN or leading dot followed by valid DNS_SUBDOMAIN. Each value must be a base64 encoded string as described in <a href="https://tools.ietf.org/html/rfc4648#section-4）。">https://tools.ietf.org/html/rfc4648#section-4）。</a> 第二种类型的例子如下所示</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">{<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;apiVersion&#34;: </span><span style="color:#c30">&#34;v1&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;kind&#34;: </span><span style="color:#c30">&#34;Secret&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;metadata&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;mysecretname&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;annotations&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">&#34;kubernetes.io/service-account.name&#34;: </span><span style="color:#c30">&#34;build-robot&#34;</span><span style="color:#bbb">
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">{<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;apiVersion&#34;: </span><span style="color:#c30">&#34;v1&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;kind&#34;: </span><span style="color:#c30">&#34;Secret&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;metadata&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;mysecretname&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;annotations&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">&#34;kubernetes.io/service-account.name&#34;: </span><span style="color:#c30">&#34;build-robot&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">        </span>}<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;kubernetes.io/service-account-token&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;kubernetes.io/service-account-token&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb"></span>}<span style="color:#bbb">    </span></code></pre></div>
 <p>第三种类型一般用于向private registry拉取镜像，在6.3节中再做阐述。</p>
 
 <h3 id="6-2-manually-specify-a-secret"><strong>6.2 manually specify a secret</strong></h3>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Secret<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>mysecret<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">type</span>:<span style="color:#bbb"> </span>Opaque<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">data</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">password</span>:<span style="color:#bbb"> </span>dmFsdWUtMg0K<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">username</span>:<span style="color:#bbb"> </span>dmFsdWUtMQ0K</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Secret<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>mysecret<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">type</span>:<span style="color:#bbb"> </span>Opaque<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">data</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">password</span>:<span style="color:#bbb"> </span>dmFsdWUtMg0K<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">username</span>:<span style="color:#bbb"> </span>dmFsdWUtMQ0K</code></pre></div>
 <p>如上述所示，使用<code>kubectl create</code>命令即可创建一个secret。创建完毕之后，可以使用serviceAccount来consume，也可以手动添加到pod的manifest中，如下例所示：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">{<span style="color:#bbb">
-</span><span style="color:#bbb"> </span><span style="color:#309;font-weight:bold">&#34;apiVersion&#34;: </span><span style="color:#c30">&#34;v1&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb"> </span><span style="color:#309;font-weight:bold">&#34;kind&#34;: </span><span style="color:#c30">&#34;Pod&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">&#34;metadata&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;mypod&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;namespace&#34;: </span><span style="color:#c30">&#34;myns&#34;</span><span style="color:#bbb">
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">{<span style="color:#bbb">
+</span><span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">&#34;apiVersion&#34;: </span><span style="color:#c30">&#34;v1&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">&#34;kind&#34;: </span><span style="color:#c30">&#34;Pod&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">&#34;metadata&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;mypod&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;namespace&#34;: </span><span style="color:#c30">&#34;myns&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">  </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">&#34;spec&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;containers&#34;: </span>[{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;mypod&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;image&#34;: </span><span style="color:#c30">&#34;redis&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;volumeMounts&#34;: </span>[{<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;foo&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;mountPath&#34;: </span><span style="color:#c30">&#34;/etc/foo&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;readOnly&#34;: </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">&#34;spec&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;containers&#34;: </span>[{<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;mypod&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;image&#34;: </span><span style="color:#c30">&#34;redis&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;volumeMounts&#34;: </span>[{<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;foo&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;mountPath&#34;: </span><span style="color:#c30">&#34;/etc/foo&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;readOnly&#34;: </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
 </span><span style="color:#bbb">      </span>}]<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>}],<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;volumes&#34;: </span>[{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;foo&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;secret&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;secretName&#34;: </span><span style="color:#c30">&#34;mysecret&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;volumes&#34;: </span>[{<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;foo&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;secret&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;secretName&#34;: </span><span style="color:#c30">&#34;mysecret&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">      </span>}<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>}]<span style="color:#bbb">
 </span><span style="color:#bbb">  </span>}<span style="color:#bbb">
@@ -684,7 +684,7 @@ secrets:
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -937,6 +937,19 @@ secrets:
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -958,19 +971,6 @@ secrets:
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

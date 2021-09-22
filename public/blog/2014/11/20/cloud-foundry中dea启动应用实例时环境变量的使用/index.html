@@ -18,7 +18,7 @@
   
   <meta name="description" content="在Cloud Foundry v2中，当应用用户需要启动应用的实例时，用户通过cf CLI向cloud controller发送请求，而cloud controller通过NATS向DEA转发启动请求。真正执行启动事宜的是DEA，DEA主要做的工作为启动一个warden container, 并将droplet等内容拷贝进入container内部，最后配置完指定的环境变量，在这些环境变量下启动应用的启动脚本。 本文将从阐述Cloud Foundry中DEA如何为应用实例的启动配置环境变量。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -224,22 +224,22 @@
 
 <p>在这部分，通过代码的形式来说明DEA对于应用启动请求的执行流程。
 1.首先DEA订阅相应主题的消息，主题为“dea.#{bootstrap.uuid}.start”，含义为“自身DEA的应用启动消息”：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    subscribe(<span style="color:#c30">&#34;dea.</span><span style="color:#a00">#{</span>bootstrap<span style="color:#555">.</span>uuid<span style="color:#a00">}</span><span style="color:#c30">.start&#34;</span>) <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>message<span style="color:#555">|</span>  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    subscribe(<span style="color:#c30">&#34;dea.</span><span style="color:#a00">#{</span>bootstrap<span style="color:#555">.</span>uuid<span style="color:#a00">}</span><span style="color:#c30">.start&#34;</span>) <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>message<span style="color:#555">|</span>  
         bootstrap<span style="color:#555">.</span>handle_dea_directed_start(message)  
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>2.当收到订阅主题之后，执行bootstrap.handle_dea_directed_start(message)，含义为“通过bootstrap类实例来处理应用的启动请求”：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">handle_dea_directed_start</span>(message)  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">handle_dea_directed_start</span>(message)  
     start_app(message<span style="color:#555">.</span>data)  
 <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>3.可以认为处理的入口，即为以上代码中的start_app方法：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start_app</span>(data)  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start_app</span>(data)  
     instance <span style="color:#555">=</span> instance_manager<span style="color:#555">.</span>create_instance(data)  
     <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">unless</span> instance
 
     instance<span style="color:#555">.</span>start  
 <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>4.在start_app方法中，首先通过instance_manager类实例来创建一个instance对象，通过执行instance实例的类方法start，可以看到自始至终，传递的参数的原始来源都是通过NATS消息传递来的message，也就是1中的message：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start</span>(<span style="color:#555">&amp;</span>callback)  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start</span>(<span style="color:#555">&amp;</span>callback)  
         <span style="color:#366">p</span> <span style="color:#555">=</span> <span style="color:#360">Promise</span><span style="color:#555">.</span>new <span style="color:#069;font-weight:bold">do</span>  
         <span style="color:#a00;background-color:#faa">……</span>  
         <span style="color:#555">[</span>  
@@ -255,7 +255,7 @@
         <span style="color:#366">p</span><span style="color:#555">.</span>deliver  
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>5.其中真正关于应用启动的执行在promise_start方法中实现：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">promise_start</span>  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">promise_start</span>  
       <span style="color:#360">Promise</span><span style="color:#555">.</span>new <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span><span style="color:#366">p</span><span style="color:#555">|</span>  
         env <span style="color:#555">=</span> <span style="color:#360">Env</span><span style="color:#555">.</span>new(<span style="color:#360">StartMessage</span><span style="color:#555">.</span>new(@raw_attributes), <span style="color:#366">self</span>)  
         <span style="color:#069;font-weight:bold">if</span> staged_info  
@@ -285,7 +285,7 @@
 <h2 id="dea环境变量的配置"><strong>DEA环境变量的配置</strong></h2>
 
 <p>在以上步骤的第5步，首先创建了环境变量env = Env.new(StartMessage.new(@raw_attributes), self)，Env类的初始化方法如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">initialize</span>(message, instance_or_staging_task<span style="color:#555">=</span><span style="color:#069">nil</span>)  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">initialize</span>(message, instance_or_staging_task<span style="color:#555">=</span><span style="color:#069">nil</span>)  
        @strategy_env <span style="color:#555">=</span> <span style="color:#069;font-weight:bold">if</span> message<span style="color:#555">.</span>is_a? <span style="color:#360">StagingMessage</span>  
          <span style="color:#360">StagingEnv</span><span style="color:#555">.</span>new(message, instance_or_staging_task)  
        <span style="color:#069;font-weight:bold">else</span>  
@@ -297,7 +297,7 @@
 <p>在promise_start方法中，创建env变量之后，通过判断staged_info来选择start_script变量的构建。</p>
 
 <p>现在分析staged_info的代码实现：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">staged_info</span>  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">staged_info</span>  
       @staged_info <span style="color:#555">||=</span> <span style="color:#069;font-weight:bold">begin</span>  
         <span style="color:#360">Dir</span><span style="color:#555">.</span>mktmpdir <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>destination_dir<span style="color:#555">|</span>  
            staging_file_name <span style="color:#555">=</span> <span style="color:#c30">&#39;staging_info.yml&#39;</span>  
@@ -308,11 +308,11 @@
       <span style="color:#069;font-weight:bold">end</span>  
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>主要是通过指定路径，然后从路径中提取出变量。下面以一个ruby的应用为例，其staging_info.yml文件的内容为：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#555">---</span>  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#555">---</span>  
     <span style="color:#fc3">detected_buildpack</span>: <span style="color:#360">Ruby</span><span style="color:#555">/</span><span style="color:#360">Rack</span>  
     <span style="color:#fc3">start_command</span>: bundle <span style="color:#366">exec</span> rackup config<span style="color:#555">.</span>ru <span style="color:#555">-</span><span style="color:#366">p</span> $PORT  </code></pre></div>
 <p>因此，最终@staged_info的内容如上，在instance.start方法中，command为bundle exec rackup config.ru -p $PORT。有了command变量之后，接着是构建start_script变量：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    start_script <span style="color:#555">=</span>  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    start_script <span style="color:#555">=</span>  
         <span style="color:#360">Dea</span><span style="color:#555">::</span><span style="color:#360">StartupScriptGenerator</span><span style="color:#555">.</span>new(  
             command,  
             env<span style="color:#555">.</span>exported_user_environment_variables,  
@@ -321,13 +321,13 @@
 <p>可以看到，DEA通过StartupScriptGenerator类来创建start_script，其中参数为三个，第一个为刚才涉及到的command，后两个均需要通过env变量来生成。</p>
 
 <p>现在看exported_user_environment_variables方法的实现：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">exported_user_environment_variables</span>  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">exported_user_environment_variables</span>  
         to_export(translate_env(message<span style="color:#555">.</span>env))  
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>该方法实现从message中提取中属性为env的信息，作为用户的环境变量。</p>
 
 <p>进入env.exported_system_environment_variables的方法实现：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">exported_system_environment_variables</span>  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">exported_system_environment_variables</span>  
         env <span style="color:#555">=</span> <span style="color:#555">[</span>  
             <span style="color:#555">[</span><span style="color:#c30">&#34;VCAP_APPLICATION&#34;</span>,  <span style="color:#360">Yajl</span><span style="color:#555">::</span><span style="color:#360">Encoder</span><span style="color:#555">.</span>encode(vcap_application)<span style="color:#555">]</span>,  
             <span style="color:#555">[</span><span style="color:#c30">&#34;VCAP_SERVICES&#34;</span>, <span style="color:#360">Yajl</span><span style="color:#555">::</span><span style="color:#360">Encoder</span><span style="color:#555">.</span>encode(vcap_services)<span style="color:#555">]</span>,  
@@ -338,7 +338,7 @@
         to_export(env <span style="color:#555">+</span> strategy_env<span style="color:#555">.</span>exported_system_environment_variables)  
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>可见在生成系统的环境变量的时候，首先创建一个env数组变量，其中有信息VCAP_APPLICATION, VCAP_SERVICES, MEMORY_LIMIT三种，其中VCAP_APPLICATION的信息如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">vcap_application</span>  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">vcap_application</span>  
         @vcap_application <span style="color:#555">||=</span>  
           <span style="color:#069;font-weight:bold">begin</span>  
             <span style="color:#366">hash</span> <span style="color:#555">=</span> strategy_env<span style="color:#555">.</span>vcap_application  
@@ -357,7 +357,7 @@
           <span style="color:#069;font-weight:bold">end</span>  
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>这部分信息中包含了应用的name，uris，users，version等一系列内容。其中需要特别注意的是代码hash = strategy_env.vcap_application，该代码的作用为调用了RunningEnv类中vcap_application方法，如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">vcap_application</span>  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">vcap_application</span>  
         <span style="color:#366">hash</span> <span style="color:#555">=</span> {}  
         <span style="color:#366">hash</span><span style="color:#555">[</span><span style="color:#c30">&#34;instance_id&#34;</span><span style="color:#555">]</span> <span style="color:#555">=</span> instance<span style="color:#555">.</span>attributes<span style="color:#555">[</span><span style="color:#c30">&#34;instance_id&#34;</span><span style="color:#555">]</span>  
         <span style="color:#366">hash</span><span style="color:#555">[</span><span style="color:#c30">&#34;instance_index&#34;</span><span style="color:#555">]</span> <span style="color:#555">=</span> message<span style="color:#555">.</span>index  
@@ -373,7 +373,7 @@
 <p>可见在以上代码中，vcap_application信息中记录了很多关于应用实例的信息，包括instance_id, instance_index, host, port, started_at, started_at_timestamp, start, state_timestamp等。</p>
 
 <p>VCAP_SERVICES的信息如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">      <span style="color:#360">WHITELIST_SERVICE_KEYS</span> <span style="color:#555">=</span> <span style="color:#c30">%W[name label tags plan plan_option credentials syslog_drain_url]</span><span style="color:#555">.</span>freeze  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">      <span style="color:#360">WHITELIST_SERVICE_KEYS</span> <span style="color:#555">=</span> <span style="color:#c30">%W[name label tags plan plan_option credentials syslog_drain_url]</span><span style="color:#555">.</span>freeze  
     <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">vcap_services</span>  
        @vcap_services <span style="color:#555">||=</span>  
           <span style="color:#069;font-weight:bold">begin</span>  
@@ -396,7 +396,7 @@
 <p>随后，DEA在运行代码env &lt;&lt; [&ldquo;DATABASE_URL&rdquo;, DatabaseUriGenerator.new(message.services).database_uri] if message.services.any?，该部分代码的作用主要要理解DatabaseUriGenerator的含义，这部分笔者仍不是很清楚。</p>
 
 <p>再后来，DEA执行代码to_export(env + strategy_env.exported_system_environment_variables)，这部分的内容非常重要，主要要进入strategy_env对象所在的类中查看exported_system_environment_variables方法：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">exported_system_environment_variables</span>  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">exported_system_environment_variables</span>  
       env <span style="color:#555">=</span> <span style="color:#555">[</span>  
         <span style="color:#555">[</span><span style="color:#c30">&#34;HOME&#34;</span>, <span style="color:#c30">&#34;$PWD/app&#34;</span><span style="color:#555">]</span>,  
         <span style="color:#555">[</span><span style="color:#c30">&#34;TMPDIR&#34;</span>, <span style="color:#c30">&#34;$PWD/tmp&#34;</span><span style="color:#555">]</span>,  
@@ -409,7 +409,7 @@
 <p>可以看到，这里主要包含运行信息的环境变量，比如说HOME目录，TMP临时目录，应用实例运行的host地址，应用实例运行的端口号。其中最为重要的就是应用实例运行的端口号，在我的另一篇博文Cloud Foundry中DEA与warden通信完成应用端口监听 中，有涉及到如何通过warden server来开辟端口，最终为DEA所用，并通过环境变量的形式传递给应用实例的启动脚本。其中VCAP_APP_PORT和PORT都是warden container开启那个端口号。</p>
 
 <p>分析完了StartupScriptGenerator的三个参数，需要进入StartupScriptGenerator类的generate方法：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">generate</span>  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">generate</span>  
         script <span style="color:#555">=</span> <span style="color:#555">[]</span>  
         script <span style="color:#555">&lt;&lt;</span> <span style="color:#c30">&#34;umask 077&#34;</span>  
         script <span style="color:#555">&lt;&lt;</span> @system_envs  
@@ -420,7 +420,7 @@
         script<span style="color:#555">.</span>join(<span style="color:#c30">&#34;</span><span style="color:#c30;font-weight:bold">\n</span><span style="color:#c30">&#34;</span>)  
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>以上的代码即为创建启动脚本的过程。其中@system_envs为之前分析的env.exported_system_environment_variables, @user_envs为env.exported_user_environment_variables。还有两个脚本是EXPORT_BUILDPACK_ENV_VARIABLES_SCRIPT和START_SCRIPT，EXPORT_BUILDPACK_ENV_VARIABLES_SCRIPT脚本的代码如下，其意为执行某路径下的所有sh脚本：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#360">EXPORT_BUILDPACK_ENV_VARIABLES_SCRIPT</span> <span style="color:#555">=</span> strip_heredoc(<span style="color:#c30">&lt;&lt;-BASH).freeze  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#360">EXPORT_BUILDPACK_ENV_VARIABLES_SCRIPT</span> <span style="color:#555">=</span> strip_heredoc(<span style="color:#c30">&lt;&lt;-BASH).freeze  
 </span><span style="color:#c30"></span>       unset <span style="color:#360">GEM_PATH</span>  
        <span style="color:#069;font-weight:bold">if</span> <span style="color:#555">[</span> <span style="color:#555">-</span>d app<span style="color:#555">/.</span>profile<span style="color:#555">.</span>d <span style="color:#555">]</span>; <span style="color:#069;font-weight:bold">then</span>  
          <span style="color:#069;font-weight:bold">for</span> i <span style="color:#069;font-weight:bold">in</span> app<span style="color:#555">/.</span>profile<span style="color:#555">.</span>d<span style="color:#555">/*.</span>sh; <span style="color:#069;font-weight:bold">do</span>  
@@ -432,7 +432,7 @@
        fi  
     <span style="color:#360">BASH</span>  </code></pre></div>
 <p>而START_SCRIPT代码如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#360">START_SCRIPT</span> <span style="color:#555">=</span> strip_heredoc(<span style="color:#c30">&lt;&lt;-BASH).freeze  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#360">START_SCRIPT</span> <span style="color:#555">=</span> strip_heredoc(<span style="color:#c30">&lt;&lt;-BASH).freeze  
 </span><span style="color:#c30"></span>       <span style="color:#360">DROPLET_BASE_DIR</span><span style="color:#555">=</span>$PWD
        cd app  
        (<span style="color:#c30">%s) &gt; &gt;(tee $DROPLET_BASE_DIR/logs/stdout.log)</span> <span style="color:#f60">2</span><span style="color:#555">&gt;</span> <span style="color:#555">&gt;</span>(tee $DROPLET_BASE_DIR<span style="color:#555">/</span>logs<span style="color:#555">/</span>stderr<span style="color:#555">.</span>log <span style="color:#555">&gt;&amp;</span><span style="color:#f60">2</span>) <span style="color:#555">&amp;</span>  
@@ -442,7 +442,7 @@
        wait $STARTED  
     <span style="color:#360">BASH</span>  </code></pre></div>
 <p>以上即创建完了start_script，回到instance.rb中的promise_start方法中，即执</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">response <span style="color:#555">=</span> container<span style="color:#555">.</span>spawn(start_script, container<span style="color:#555">.</span>resource_limits(<span style="color:#366">self</span><span style="color:#555">.</span>file_descriptor_limit, <span style="color:#360">NPROC_LIMIT</span>))  </code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">response <span style="color:#555">=</span> container<span style="color:#555">.</span>spawn(start_script, container<span style="color:#555">.</span>resource_limits(<span style="color:#366">self</span><span style="color:#555">.</span>file_descriptor_limit, <span style="color:#360">NPROC_LIMIT</span>))  </code></pre></div>
 <p>即完成应用实例的启动工作。详情可以进入container类中的spawn方法实现。</p>
 
 <h2 id="转载请注明出处"><strong>转载请注明出处。</strong></h2>
@@ -693,7 +693,7 @@
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -946,6 +946,19 @@
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -967,19 +980,6 @@
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

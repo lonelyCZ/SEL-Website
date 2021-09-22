@@ -18,7 +18,7 @@
   
   <meta name="description" content="本文主要对 OpenYurt 中的 Yurttunnel Server/Agent 模块进行了源码分析，内容包括模块启动流程、各个模块组件的工作流程以及通信。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -230,7 +230,7 @@
 <p>yurttunnel Server 判断是否需要开启 iptables Manager 进行本地 nat 表管理，iptabls Manager 每隔一定时间获取集群中的 configmap 以及 node 信息来更新本地的跳转规则。</p>
 
 <p>创建并启动 certManager，会创建 CSR，将得到证书用于其与 KAS 的安全通信。并维持证书的更新。其中 CSR 的内容为：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// util/certificate/certificate_manager.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// util/certificate/certificate_manager.go
 </span><span style="color:#09f;font-style:italic"></span>
 csr <span style="color:#555">:=</span> <span style="color:#555">&amp;</span>certificates.CertificateSigningRequest{
 		<span style="color:#09f;font-style:italic">// Username, UID, Groups will be injected by API server.
@@ -258,7 +258,7 @@ csr <span style="color:#555">:=</span> <span style="color:#555">&amp;</span>cert
 <p>根据 kubeconfig 或者 /var/run/secrets/kubernetes.io/serviceaccount/ca.crt 生成 certPool（包含了验证服务器相关证书），通过 certmanager 获取当前证书，再生成  tls 配置文件。</p>
 
 <p>初始化所有的 HandlerWrappers，即如果需要配置 SharedInformerFactory，则配置。其中 HandlerWrappers 的定义如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/handlerwrapper/handlerwrapper.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/handlerwrapper/handlerwrapper.go
 </span><span style="color:#09f;font-style:italic"></span>
 <span style="color:#069;font-weight:bold">type</span> HandlerWrappers []Middleware
 
@@ -267,7 +267,7 @@ csr <span style="color:#555">:=</span> <span style="color:#555">&amp;</span>cert
 	<span style="color:#c0f">Name</span>() <span style="color:#078;font-weight:bold">string</span>
 }</code></pre></div>
 <p>对于需要配置 SharedInformerFactory 的 Middleware，还另外需要实现接口：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/handlerwrapper/initializer/initalizer.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/handlerwrapper/initializer/initalizer.go
 </span><span style="color:#09f;font-style:italic"></span>
 <span style="color:#09f;font-style:italic">// WantsSharedInformerFactory is an interface for setting SharedInformerFactory
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">type</span> WantsSharedInformerFactory <span style="color:#069;font-weight:bold">interface</span> {
@@ -312,7 +312,7 @@ csr <span style="color:#555">:=</span> <span style="color:#555">&amp;</span>cert
 <p>certManager 负责管理 yurttunnel server 与 master 连接的证书。</p>
 
 <p>启动 certManager 之后，certManager 每隔一定时间或者监测到证书 template 发生变化时，certManager 会根据函数 getTemplate 创建 csr（certificate signing request）的 spec.Request 字段：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/pki/certmanager/certmanager.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/pki/certmanager/certmanager.go
 </span><span style="color:#09f;font-style:italic"></span>
 getTemplate <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">func</span>() <span style="color:#555">*</span>x509.CertificateRequest {
 		<span style="color:#069;font-weight:bold">return</span> <span style="color:#555">&amp;</span>x509.CertificateRequest{
@@ -325,7 +325,7 @@ getTemplate <span style="color:#555">:=</span> <span style="color:#069;font-weig
 		}
 	}</code></pre></div>
 <p>并 watch 等待处理结果，如果 csr 最终状态为 Approved，则通过 <code>status.certificate</code> 字段获取证书，并更新本地证书文件。如果1）出错；2）等待超时；3） csr 的状态为 denied，则继续等待下一次更新。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// util/certificate/certificate_manager.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// util/certificate/certificate_manager.go
 </span><span style="color:#09f;font-style:italic"></span>
 <span style="color:#069;font-weight:bold">func</span> (m <span style="color:#555">*</span>manager) <span style="color:#c0f">rotateCerts</span>() (<span style="color:#078;font-weight:bold">bool</span>, <span style="color:#078;font-weight:bold">error</span>) {
 	klog.<span style="color:#c0f">V</span>(<span style="color:#f60">2</span>).<span style="color:#c0f">Infof</span>(<span style="color:#c30">&#34;Rotating certificates&#34;</span>)
@@ -356,7 +356,7 @@ getTemplate <span style="color:#555">:=</span> <span style="color:#069;font-weig
 <h4 id="csrapprover">CSRApprover</h4>
 
 <p>CSRApprover 用于人工认证（approve）cert Manager 创建的 csr，其数据结构如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/pki/certmanager/csrapprover.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/pki/certmanager/csrapprover.go
 </span><span style="color:#09f;font-style:italic"></span>
 <span style="color:#09f;font-style:italic">// YurttunnelCSRApprover is the controller that auto approve all
 </span><span style="color:#09f;font-style:italic">// yurttunnel related CSR
@@ -367,7 +367,7 @@ getTemplate <span style="color:#555">:=</span> <span style="color:#069;font-weig
 </span><span style="color:#09f;font-style:italic"></span>	workqueue   workqueue.RateLimitingInterface  <span style="color:#09f;font-style:italic">// 存放 csr key（&lt;namespace&gt;/&lt;name&gt; 或者 &lt;name&gt;），对 csr 进行认证处理
 </span><span style="color:#09f;font-style:italic"></span>}</code></pre></div>
 <p>在创建 CSRApprover 时，为 csr informer 添加 Add、Update 处理函数：enqueueObj——即将Add 或者 Update 的 csr 的 key（<code>&lt;namespace&gt;/&lt;name&gt;</code> 或者 <code>&lt;name&gt;</code>） 放入 workqueue 中。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/pki/certmanager/csrapprover.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/pki/certmanager/csrapprover.go
 </span><span style="color:#09f;font-style:italic"></span>
 <span style="color:#09f;font-style:italic">// NewCSRApprover creates a new YurttunnelCSRApprover
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">NewCSRApprover</span>(clientset kubernetes.Interface,
@@ -390,7 +390,7 @@ getTemplate <span style="color:#555">:=</span> <span style="color:#069;font-weig
 <p>启动 CSRApprover，等待本地 csrInformer 进行同步，同步完成之后，启动 threadiness（默认为2）个协程，每个协程每隔一定时间（1s）就去运行函数 runWorker，直到接收到结束信号，就关闭这个协程。</p>
 
 <p>runWorker 中调用了 processNextItem 方法，主要处理 workqueue 中的 key（csr 的 <code>&lt;namespace&gt;/&lt;name&gt;</code> 或者 <code>&lt;name&gt;</code>），如果根据 key 能够从 informer 中拿到 obj，检查 csr 的状态，如果状态既不是 approved，也不是 denied，那么尝试人工批准并且更新，如果成功，则这个 key 处理完成；否则，重新加入队列处理。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/pki/certmanager/csrapprover.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/pki/certmanager/csrapprover.go
 </span><span style="color:#09f;font-style:italic"></span>
 <span style="color:#069;font-weight:bold">func</span> (yca <span style="color:#555">*</span>YurttunnelCSRApprover) <span style="color:#c0f">runWorker</span>() {
 	<span style="color:#069;font-weight:bold">for</span> yca.<span style="color:#c0f">processNextItem</span>() {
@@ -440,7 +440,7 @@ getTemplate <span style="color:#555">:=</span> <span style="color:#069;font-weig
 <h4 id="anptunnelserver">anpTunnelServer</h4>
 
 <p>1）创建  http.Server，监听地址为 udsSockFile（/tmp/interceptor-proxier.sock），handler 为 anpserver.Tunnel，其结构为：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/server/tunnel.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/server/tunnel.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">type</span> Tunnel <span style="color:#069;font-weight:bold">struct</span> {
 	Server <span style="color:#555">*</span>ProxyServer
 }
@@ -451,7 +451,7 @@ getTemplate <span style="color:#555">:=</span> <span style="color:#069;font-weig
 <p>其中成员 ProxyServer 为 ANP Proxy Server，负责管理与 yurttunnel Agent 之间的长连接，并将请求转发给对应的 agent。</p>
 
 <p>2）创建 http.Server，监听地址为0.0.0.0:10263（负责监听 master 发来的 https 消息），TLSConfig 为之前生成的 tls 配置文件，handler 为 wrappedHandler，其作用为将监听到的消息封装成 anp proxy server 需要的格式，并将其转发至 anpserver.Tunnel。其核心 handler 为 RequestInterceptor，并且包装了之前已经初始化的 HandlerWrappers。其中 RequestInterceptor 结构为：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/server/interceptor.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// pkg/yurttunnel/server/interceptor.go
 </span><span style="color:#09f;font-style:italic"></span>
 <span style="color:#09f;font-style:italic">// ReqRequestInterceptor intercepts http/https requests sent from the master,
 </span><span style="color:#09f;font-style:italic">// prometheus and metric server, setup proxy tunnel to kubelet, sends requests
@@ -762,7 +762,7 @@ getTemplate <span style="color:#555">:=</span> <span style="color:#069;font-weig
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -1015,6 +1015,19 @@ getTemplate <span style="color:#555">:=</span> <span style="color:#069;font-weig
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -1036,19 +1049,6 @@ getTemplate <span style="color:#555">:=</span> <span style="color:#069;font-weig
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

@@ -18,7 +18,7 @@
   
   <meta name="description" content="DeviceController属于KubeEdge的云端组件，负责设备管理。KubeEdge利用Kubernetes提供的CRD机制，对真实的物理设备进行抽象，通过自定义一个名为Device的自定义资源（Custom Resource）来描述设备的元数据以及状态。而DeviceController，顾名思义，就是这一资源的的控制器，由它负责云边的设备信息同步。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -233,7 +233,7 @@
 <p>为了避免篇幅冗长，代码有部分省略。</p>
 
 <p><code>DownstreamController</code>的定义如下，它的作用是watch kubernetes api server and send change to edge。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// DownstreamController watch kubernetes api server and send change to edge
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// DownstreamController watch kubernetes api server and send change to edge
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">type</span> DownstreamController <span style="color:#069;font-weight:bold">struct</span> {
 	kubeClient   <span style="color:#555">*</span>kubernetes.Clientset
 	messageLayer messagelayer.MessageLayer
@@ -245,7 +245,7 @@
 	crdClient <span style="color:#555">*</span>rest.RESTClient
 }</code></pre></div>
 <p><code>UpstreamController</code>的定义如下，它的所用是subscribe messages from edge and sync to k8s api server。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// UpstreamController subscribe messages from edge and sync to k8s api server
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// UpstreamController subscribe messages from edge and sync to k8s api server
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">type</span> UpstreamController <span style="color:#069;font-weight:bold">struct</span> {
 	crdClient    <span style="color:#555">*</span>rest.RESTClient
 	messageLayer messagelayer.MessageLayer
@@ -256,7 +256,7 @@
 </span><span style="color:#09f;font-style:italic"></span>	dc <span style="color:#555">*</span>DownstreamController
 }</code></pre></div>
 <p>模块启动入口：cloud/pkg/devicecontroller/devicecontroller.go，DeviceController 主体逻辑如下，</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (dc <span style="color:#555">*</span>DeviceController) <span style="color:#c0f">Start</span>() {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (dc <span style="color:#555">*</span>DeviceController) <span style="color:#c0f">Start</span>() {
 	downstream, err <span style="color:#555">:=</span> controller.<span style="color:#c0f">NewDownstreamController</span>()
 	<span style="color:#555">...</span>
 	upstream, err <span style="color:#555">:=</span> controller.<span style="color:#c0f">NewUpstreamController</span>(downstream)
@@ -270,7 +270,7 @@
 <h3 id="2-2-downstream">2.2. downstream</h3>
 
 <h4 id="downstream-start">downstream.Start()</h4>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Start DownstreamController
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Start DownstreamController
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (dc <span style="color:#555">*</span>DownstreamController) <span style="color:#c0f">Start</span>() <span style="color:#078;font-weight:bold">error</span> {
 	klog.<span style="color:#c0f">Info</span>(<span style="color:#c30">&#34;Start downstream devicecontroller&#34;</span>)
 
@@ -286,7 +286,7 @@
 <p>可以看到，<code>downstreamcontroller</code>的启动函数非常简单，即由两个独立的goroutine分别运行<code>syncDeviceModel()</code>和<code>syncDevice()</code>。由于<code>DeviceModel</code>必须要在<code>Device</code>实例之前先创建好，因此<code>syncDeviceModel()</code>和<code>syncDevice()</code>的启动顺序不能变。不过目前的实现中，只是简单的通过sleep 1秒钟来解决两者的同步问题，这是比较粗糙的做法，这里也标注了 TODO，后续肯定是需要改进的。</p>
 
 <h4 id="syncdevicemodel">syncDeviceModel()</h4>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// syncDeviceModel is used to get events from informer
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// syncDeviceModel is used to get events from informer
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (dc <span style="color:#555">*</span>DownstreamController) <span style="color:#c0f">syncDeviceModel</span>() {
 	<span style="color:#069;font-weight:bold">for</span> {
 		<span style="color:#069;font-weight:bold">select</span> {
@@ -323,7 +323,7 @@
 
 <ul>
 <li><p>deviceAdded：该方法相比于<code>deviceModelAdded()</code>要复杂很多。代码如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// deviceAdded creates a device, adds in deviceManagers map, send a message to edge node if node selector is present.
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// deviceAdded creates a device, adds in deviceManagers map, send a message to edge node if node selector is present.
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (dc <span style="color:#555">*</span>DownstreamController) <span style="color:#c0f">deviceAdded</span>(device <span style="color:#555">*</span>v1alpha2.Device) {
 	dc.deviceManager.Device.<span style="color:#c0f">Store</span>(device.Name, device) <span style="color:#09f;font-style:italic">//缓存
 </span><span style="color:#09f;font-style:italic"></span>	<span style="color:#069;font-weight:bold">if</span> <span style="color:#366">len</span>(device.Spec.NodeSelector.NodeSelectorTerms) <span style="color:#555">!=</span> <span style="color:#f60">0</span> <span style="color:#555">&amp;&amp;</span> 
@@ -364,7 +364,7 @@ msg <span style="color:#555">:=</span> model.<span style="color:#c0f">NewMessage
 <li>deviceDeleted：删除设备与新增设备的逻辑基本一致，不再赘述。</li>
 
 <li><p>deviceUpdated：设备更新的逻辑也比较复杂，该方法代码如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// deviceUpdated updates the map, check if device is actually updated.
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// deviceUpdated updates the map, check if device is actually updated.
 </span><span style="color:#09f;font-style:italic">// If nodeSelector is updated, call add device for newNode, deleteDevice for old Node.
 </span><span style="color:#09f;font-style:italic">// If twin is updated, send twin update message to edge
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (dc <span style="color:#555">*</span>DownstreamController) <span style="color:#c0f">deviceUpdated</span>(device <span style="color:#555">*</span>v1alpha2.Device) {
@@ -431,7 +431,7 @@ msg <span style="color:#555">:=</span> model.<span style="color:#c0f">NewMessage
 <h3 id="2-3-upstream">2.3. upstream</h3>
 
 <h4 id="upstream-start">upstream.Start()</h4>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Start UpstreamController
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Start UpstreamController
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (uc <span style="color:#555">*</span>UpstreamController) <span style="color:#c0f">Start</span>() <span style="color:#078;font-weight:bold">error</span> {
 	klog.<span style="color:#c0f">Info</span>(<span style="color:#c30">&#34;Start upstream devicecontroller&#34;</span>)
 
@@ -446,7 +446,7 @@ msg <span style="color:#555">:=</span> model.<span style="color:#c0f">NewMessage
 <p>upstream的启动函数也非常简单，只做两件事情，分发消息并更新Device API（即<code>Device.Status</code>部分）。</p>
 
 <h4 id="dispatchmessage">dispatchMessage()</h4>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (uc <span style="color:#555">*</span>UpstreamController) <span style="color:#c0f">dispatchMessage</span>() {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (uc <span style="color:#555">*</span>UpstreamController) <span style="color:#c0f">dispatchMessage</span>() {
 	<span style="color:#069;font-weight:bold">for</span> {
 		<span style="color:#069;font-weight:bold">select</span> {
 		<span style="color:#069;font-weight:bold">case</span> <span style="color:#555">&lt;-</span>beehiveContext.<span style="color:#c0f">Done</span>():
@@ -469,7 +469,7 @@ msg <span style="color:#555">:=</span> model.<span style="color:#c0f">NewMessage
 <p>首先接收消息，然后根据消息的<code>resourceType</code>进行转发，也就是把边缘端<code>devicetwin</code>更新上来的消息转发至<code>deviceStatusChan</code>中。</p>
 
 <h4 id="updatedevicestatus">updateDeviceStatus()</h4>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (uc <span style="color:#555">*</span>UpstreamController) <span style="color:#c0f">updateDeviceStatus</span>() {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (uc <span style="color:#555">*</span>UpstreamController) <span style="color:#c0f">updateDeviceStatus</span>() {
 	<span style="color:#069;font-weight:bold">for</span> {
 		<span style="color:#069;font-weight:bold">select</span> {
 		<span style="color:#069;font-weight:bold">case</span> <span style="color:#555">&lt;-</span>beehiveContext.<span style="color:#c0f">Done</span>():
@@ -779,7 +779,7 @@ msg <span style="color:#555">:=</span> model.<span style="color:#c0f">NewMessage
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -1032,6 +1032,19 @@ msg <span style="color:#555">:=</span> model.<span style="color:#c0f">NewMessage
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -1053,19 +1066,6 @@ msg <span style="color:#555">:=</span> model.<span style="color:#c0f">NewMessage
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

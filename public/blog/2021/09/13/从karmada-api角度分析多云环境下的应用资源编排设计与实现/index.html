@@ -18,7 +18,7 @@
   
   <meta name="description" content="karmada吸取了CNCF社区的Federation v1和v2（也称为kubefed）项目经验与教训，在保持原有k8s API不变的情况下，通过添加与多云应用资源编排相关的一套新的API和控制面组件，方便用户将应用部署到多云环境中，实现扩容、高可用等目标。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -259,38 +259,38 @@
 <p>由于karamda借鉴了kubefed的设计思想，我们先回顾kubefed的多云应用编排API设计。</p>
 
 <p>为了部署一个多云环境下的应用，kubefed可以为<code>Deployment</code>等k8s原生API自动生成“多云增强版API”（用CRD定义），比如，用户可以创建下面的例子中的类型为<code>FederatedDeployment</code>的custom resource（CR）对象，将nginx运行在两个集群<code>member1</code>和<code>member2</code>上（这两个集群是kubefed管理下的集群联邦成员，由kubefed的集群配置管理，我们可以暂时不管它们具体定义方法）。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>types.kubefed.io/v1beta1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>FederatedDeployment<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>test-deployment<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>test-namespace<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">template</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">selector</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">template</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">containers</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span>- <span style="color:#309;font-weight:bold">image</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">placement</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">clusters</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member2<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">overrides</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">clusterName</span>:<span style="color:#bbb"> </span>member2<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">clusterOverrides</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">path</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;/spec/replicas&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">value</span>:<span style="color:#bbb"> </span><span style="color:#f60">2</span></code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>types.kubefed.io/v1beta1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>FederatedDeployment<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>test-deployment<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>test-namespace<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">template</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">template</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">containers</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span>- <span style="color:#069;font-weight:bold">image</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">placement</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">clusters</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member2<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">overrides</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">clusterName</span>:<span style="color:#bbb"> </span>member2<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">clusterOverrides</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">path</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;/spec/replicas&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">value</span>:<span style="color:#bbb"> </span><span style="color:#f60">2</span></code></pre></div>
 <p>在这个对象中我们应当注意三个方面：</p>
 
 <ol>
@@ -308,26 +308,26 @@
 <p>作为后来者的karmada吸取了kubefed“非原生API”方面的教训，将kubefed中定义在同一个API资源对象中的“资源模板”、“placement”、“overrides”拆开成3个如下的单独对象。在karmada中，用户需要分别创建资源模板（resource template）、多云调度策略（propagation policy）和多云差异化配置策略（override policy）3个对象：</p>
 
 <p>首先我们需要定义资源模板对象。为什么称为模板？是因为在每个集群中实际部署的<code>Deployment</code>对象都以它为模板创建，但又允许各不相同，详见后续对override policy的描述。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">selector</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">template</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">containers</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span>- <span style="color:#309;font-weight:bold">image</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">template</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">containers</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span>- <span style="color:#069;font-weight:bold">image</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx</code></pre></div>
 <p>我们可以看到，在karmada中用户可以直接使用k8s原生API资源。</p>
 
 <p>其次我们需要定义多云调度策略对象（propagation policy），指定将上述nginx deployment部署到<code>member1</code>和<code>member2</code>两个由karmada管理的member集群中。在这个propagation policy对象中我们应注意以下几点：</p>
@@ -337,46 +337,46 @@
 <li><code>.spec.placement</code>指定了nginx需要部署到<code>member1</code>和<code>member2</code>两个member集群中</li>
 
 <li><p><code>.spec.dependentOverrides</code>，表示要karmada控制面等下面的差异化配置（override policy）创建之后再将应用部署到<code>member1</code>和<code>member2</code>集群。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>policy.karmada.io/v1alpha1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>PropagationPolicy<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">resourceSelectors</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span>- <span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">placement</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">clusterAffinity</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">clusterNames</span>:<span style="color:#bbb">
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>policy.karmada.io/v1alpha1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>PropagationPolicy<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">resourceSelectors</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span>- <span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">placement</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">clusterAffinity</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">clusterNames</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>- member1<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>- member2<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">dependentOverrides</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">dependentOverrides</span>:<span style="color:#bbb">
 </span><span style="color:#bbb"></span>- nginx-override</code></pre></div></li>
 </ol>
 
 <p>最后我们需要定义多云差异化配置对象（override policy），指定将部署在<code>member2</code>集群中的nginx deployment的replica数量改为2，即需要在<code>member2</code>集群中运行2个nginx实例。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>policy.karmada.io/v1alpha1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>OverridePolicy<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-override<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">resourceSelectors</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">targetCluster</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">clusterNames</span>:<span style="color:#bbb">
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>policy.karmada.io/v1alpha1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>OverridePolicy<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-override<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">resourceSelectors</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">targetCluster</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">clusterNames</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">      </span>- member2<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">overriders</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">plaintext</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">path</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;/spec/replicas&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">operator</span>:<span style="color:#bbb"> </span>replace<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">value</span>:<span style="color:#bbb"> </span><span style="color:#f60">2</span></code></pre></div>
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">overriders</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">plaintext</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">path</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;/spec/replicas&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">operator</span>:<span style="color:#bbb"> </span>replace<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">value</span>:<span style="color:#bbb"> </span><span style="color:#f60">2</span></code></pre></div>
 <p>将上述三个yaml用<code>kubectl apply</code>提交给karmada控制面后，在使用<code>karmada-apiserver</code> context时执行<code>kubectl get deploy</code>可以得到如下的输出。虽然READY状态<code>3/1</code>的确有些不直观，但这表示利用karmada实现的多云应用下发已经成功，且karmada控制面已经从<code>member1</code>和<code>member2</code>两个member集群收到pod运行状态：<code>member1</code>集群1个pod ready, <code>member2</code>集群2个pod ready。作为验证可以分别切换到两个member集群的context，查看pod运行情况。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get deploy
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kubectl get deploy
 NAME    READY   UP-TO-DATE   AVAILABLE   AGE
 nginx   3/1     <span style="color:#f60">3</span>            <span style="color:#f60">3</span>           5m8s</code></pre></div>
 <h2 id="2-多云环境下的应用资源编排api实现">2. 多云环境下的应用资源编排API实现</h2>
@@ -430,27 +430,27 @@ nginx   3/1     <span style="color:#f60">3</span>            <span style="color:
 <p>首先为k8s原生API资源对象（包括CRD资源）添加两个label（<code>ClaimPolicyForObject</code>方法负责添加）</p>
 
 <p>以前面的nginx deployment为例，执行<code>kubectl get deploy nginx -o yaml</code>可以看到两个新加的label：<code>propagationpolicy.karmada.io/name</code>和<code>propagationpolicy.karmada.io/namespace</code>，分别表示与该deployment绑定成功的propagation policy的name和namespace。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">propagationpolicy.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">propagationpolicy.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">selector</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">template</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">containers</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span>- <span style="color:#309;font-weight:bold">image</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">propagationpolicy.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">propagationpolicy.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">template</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">containers</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span>- <span style="color:#069;font-weight:bold">image</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx</code></pre></div>
 <p>其次创建resource binding对象。以前面的nginx deployment为例，我们执行<code>kubectl get rb nginx-deployment</code>，可以看到resource detector创建的resource binding的yaml，对该yaml说明如下：</p>
 
 <ol>
@@ -460,31 +460,31 @@ nginx   3/1     <span style="color:#f60">3</span>            <span style="color:
 <li><code>.metadata.ownerReferences</code>是用户创建的nginx deployment</li>
 
 <li><p>需要注意的是当前的resource binding对象的yaml中<code>.spec.clusters</code>字段还是空的，也就是还没有明确具体需要调度到哪些member集群中。这个信息需要等下一步的karmada scheduler组件在调度完成之后填充</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>work.karmada.io/v1alpha1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ResourceBinding<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">propagationpolicy.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">propagationpolicy.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">ownerReferences</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span>- <span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">blockOwnerDeletion</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">controller</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">uid</span>:<span style="color:#bbb"> </span><span style="color:#f60">80672628</span>-e8c9-462b-933b-037b51d79e59<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">resource</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">resourcePerReplicas</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">memory</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span></code></pre></div></li>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>work.karmada.io/v1alpha1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ResourceBinding<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">propagationpolicy.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">propagationpolicy.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">ownerReferences</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span>- <span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">blockOwnerDeletion</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">controller</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">uid</span>:<span style="color:#bbb"> </span><span style="color:#f60">80672628</span>-e8c9-462b-933b-037b51d79e59<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">resource</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">resourcePerReplicas</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">memory</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span></code></pre></div></li>
 </ol>
 
 <h3 id="2-2-karmada-scheduler-后面简称scheduler-的处理流程">2.2. karmada scheduler（后面简称scheduler）的处理流程</h3>
@@ -512,36 +512,36 @@ nginx   3/1     <span style="color:#f60">3</span>            <span style="color:
 </ol>
 
 <p>以前面的nginx deployment为例，执行<code>kubectl get rb nginx-deployment</code>，可以看到完成上述调度流程的resource binding对象如下，注意其中由当前步骤中scheduler添加的<code>.metadata.annotations</code>和<code>.spec.clusters</code>：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>work.karmada.io/v1alpha1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ResourceBinding<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">annotations</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">policy.karmada.io/applied-placement</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#39;{&#34;clusterAffinity&#34;:{&#34;clusterNames&#34;:[&#34;member1&#34;,&#34;member2&#34;]}}&#39;</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">propagationpolicy.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">propagationpolicy.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">ownerReferences</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">blockOwnerDeletion</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">controller</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">uid</span>:<span style="color:#bbb"> </span><span style="color:#f60">80672628</span>-e8c9-462b-933b-037b51d79e59<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">clusters</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member2<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">resource</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">resourcePerReplicas</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">memory</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span></code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>work.karmada.io/v1alpha1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ResourceBinding<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">policy.karmada.io/applied-placement</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#39;{&#34;clusterAffinity&#34;:{&#34;clusterNames&#34;:[&#34;member1&#34;,&#34;member2&#34;]}}&#39;</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">propagationpolicy.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">propagationpolicy.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">ownerReferences</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">blockOwnerDeletion</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">controller</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">uid</span>:<span style="color:#bbb"> </span><span style="color:#f60">80672628</span>-e8c9-462b-933b-037b51d79e59<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">clusters</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member2<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">resource</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">resourcePerReplicas</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">memory</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span></code></pre></div>
 <p>上面的resource binding对象还需要转变为<code>member1</code>和<code>member2</code>两个member集群中具体的deployment对象，并且如果用户定义了多云差异化配置对象（override policy），我们还需要应用这些override policy。这是一个一对多的转换，该转换工作由resource binding controller配合override manager完成。</p>
 
 <h3 id="2-3-resource-binding-controller的处理流程">2.3. resource binding controller的处理流程</h3>
@@ -549,58 +549,58 @@ nginx   3/1     <span style="color:#f60">3</span>            <span style="color:
 <p>在上面的例子中，经过scheduler调度的resource binding包含了需要下发到member集群的deployment对象以及下发的目标集群<code>member1</code>和<code>member2</code>。resource binding controller还需将这个resource binding转化为两个work（karmada定义的CRD），分别对应<code>member1</code>和<code>member2</code>。</p>
 
 <p>执行<code>kubectl get work -A</code>，可以得到resource binding controller生成的work对象：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">NAMESPACE            NAME               AGE
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">NAMESPACE            NAME               AGE
 karmada-es-member1   nginx-687f7fb96f   19m
 karmada-es-member2   nginx-687f7fb96f   19m</code></pre></div>
 <p>可以看到一个resource binding对象转化成了两个work对象，且两个work对象同名（<code>nginx-687f7fb96f</code>）。每个work对象创建在单独的namespace中（<code>karmada-es-member1</code>和<code>karmada-es-member2</code>），两个namespace分别对应目的地集群<code>member1</code>和<code>member2</code>。</p>
 
 <p>执行<code>kubectl get works nginx-687f7fb96f -n karmada-es-member2 -o yaml</code>,可以看到由resource binding controller的<code>ensureWork</code>方法创建的work对象的更多信息：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>work.karmada.io/v1alpha1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Work<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">annotations</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">policy.karmada.io/applied-overrides</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#39;[{&#34;policyName&#34;:&#34;nginx-override&#34;,&#34;overriders&#34;:{&#34;plaintext&#34;:[{&#34;path&#34;:&#34;/spec/replicas&#34;,&#34;operator&#34;:&#34;replace&#34;,&#34;value&#34;:2}]}}]&#39;</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">creationTimestamp</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;2021-09-07T08:17:33Z&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">finalizers</span>:<span style="color:#bbb">
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>work.karmada.io/v1alpha1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Work<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">policy.karmada.io/applied-overrides</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#39;[{&#34;policyName&#34;:&#34;nginx-override&#34;,&#34;overriders&#34;:{&#34;plaintext&#34;:[{&#34;path&#34;:&#34;/spec/replicas&#34;,&#34;operator&#34;:&#34;replace&#34;,&#34;value&#34;:2}]}}]&#39;</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">creationTimestamp</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;2021-09-07T08:17:33Z&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">finalizers</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">  </span>- karmada.io/execution-controller<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">generation</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">resourcebinding.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">resourcebinding.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-687f7fb96f<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>karmada-es-member2<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">workload</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">manifests</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">annotations</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">kubectl.kubernetes.io/last-applied-configuration</span>:<span style="color:#bbb"> </span>|<span style="color:#c30;font-style:italic">
-</span><span style="color:#c30;font-style:italic">            </span><span style="color:#bbb">            </span>{<span style="color:#c30">&#34;apiVersion&#34;</span>:<span style="color:#c30">&#34;apps/v1&#34;</span>,<span style="color:#c30">&#34;kind&#34;</span>:<span style="color:#c30">&#34;Deployment&#34;</span>,<span style="color:#c30">&#34;metadata&#34;</span>:{<span style="color:#c30">&#34;annotations&#34;</span>:{},<span style="color:#c30">&#34;labels&#34;</span>:{<span style="color:#c30">&#34;app&#34;</span>:<span style="color:#c30">&#34;nginx&#34;</span>},<span style="color:#c30">&#34;name&#34;</span>:<span style="color:#c30">&#34;nginx&#34;</span>,<span style="color:#c30">&#34;namespace&#34;</span>:<span style="color:#c30">&#34;default&#34;</span>},<span style="color:#c30">&#34;spec&#34;</span>:{<span style="color:#c30">&#34;replicas&#34;</span>:<span style="color:#f60">1</span>,<span style="color:#c30">&#34;selector&#34;</span>:{<span style="color:#c30">&#34;matchLabels&#34;</span>:{<span style="color:#c30">&#34;app&#34;</span>:<span style="color:#c30">&#34;nginx&#34;</span>}},<span style="color:#c30">&#34;template&#34;</span>:{<span style="color:#c30">&#34;metadata&#34;</span>:{<span style="color:#c30">&#34;labels&#34;</span>:{<span style="color:#c30">&#34;app&#34;</span>:<span style="color:#c30">&#34;nginx&#34;</span>}},<span style="color:#c30">&#34;spec&#34;</span>:{<span style="color:#c30">&#34;containers&#34;</span>:[{<span style="color:#c30">&#34;image&#34;</span>:<span style="color:#c30">&#34;nginx&#34;</span>,<span style="color:#c30">&#34;name&#34;</span>:<span style="color:#c30">&#34;nginx&#34;</span>}]}}}}<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">propagationpolicy.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">propagationpolicy.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">resourcebinding.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">resourcebinding.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">work.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-687f7fb96f<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">work.karmada.io/namespace</span>:<span style="color:#bbb"> </span>karmada-es-member2<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">2</span><span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">selector</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">template</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">              </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">          </span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">containers</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">            </span>- <span style="color:#309;font-weight:bold">image</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">              </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx</code></pre></div>
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">generation</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">resourcebinding.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">resourcebinding.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-687f7fb96f<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>karmada-es-member2<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">workload</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">manifests</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">kubectl.kubernetes.io/last-applied-configuration</span>:<span style="color:#bbb"> </span><span style="color:#c30;font-style:italic">|
+</span><span style="color:#c30;font-style:italic">            {&#34;apiVersion&#34;:&#34;apps/v1&#34;,&#34;kind&#34;:&#34;Deployment&#34;,&#34;metadata&#34;:{&#34;annotations&#34;:{},&#34;labels&#34;:{&#34;app&#34;:&#34;nginx&#34;},&#34;name&#34;:&#34;nginx&#34;,&#34;namespace&#34;:&#34;default&#34;},&#34;spec&#34;:{&#34;replicas&#34;:1,&#34;selector&#34;:{&#34;matchLabels&#34;:{&#34;app&#34;:&#34;nginx&#34;}},&#34;template&#34;:{&#34;metadata&#34;:{&#34;labels&#34;:{&#34;app&#34;:&#34;nginx&#34;}},&#34;spec&#34;:{&#34;containers&#34;:[{&#34;image&#34;:&#34;nginx&#34;,&#34;name&#34;:&#34;nginx&#34;}]}}}}</span><span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">propagationpolicy.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">propagationpolicy.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">resourcebinding.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">resourcebinding.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">work.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-687f7fb96f<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">work.karmada.io/namespace</span>:<span style="color:#bbb"> </span>karmada-es-member2<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">2</span><span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">template</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">              </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">          </span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">containers</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">            </span>- <span style="color:#069;font-weight:bold">image</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">              </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx</code></pre></div>
 <p>对于该work对象说明如下：</p>
 
 <ol>
@@ -856,7 +856,7 @@ karmada-es-member2   nginx-687f7fb96f   19m</code></pre></div>
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -1109,6 +1109,19 @@ karmada-es-member2   nginx-687f7fb96f   19m</code></pre></div>
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -1130,19 +1143,6 @@ karmada-es-member2   nginx-687f7fb96f   19m</code></pre></div>
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

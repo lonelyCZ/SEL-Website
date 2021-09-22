@@ -18,7 +18,7 @@
   
   <meta name="description" content="在Cloud Foundry中，用来收集Cloud Foundry各组件日志信息的组件，名为syslog_aggregator。 syslog_aggregator可以做到方便的收集Cloud Foundry中所有组件的日志信息，并将这些信息进行初步处理，比如说：将不同月份产生的日志，进行分类存储；另外还对同一月份内产生的日志，将其通过不同的日期进行分类。这样的话，当Cloud Foundry平台的开发者，在运营该平台时需要查看Cloud Foundry中某一个组件产生的日志时，可以方便的查找到对应日期的日志。syslog_aggregator除了可以对日志进行分组件，分月份，分日期进行存储外，还提供一些对日志进行打包或剪枝的功能，比如：syslog_aggregator会将一定期限内的日志，进行压缩，以达到节省存储空间的功能；另外syslog_aggregator还会定期对日志进行清除，比如只保存一定期限时间长度的日志，当日志超过该时限，syslog_aggregator会将其清除。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -223,7 +223,7 @@
 <h2 id="monit模块"><strong>monit模块</strong></h2>
 
 <p>monit模块主要是实现：监控syslog_aggregator组件的运行状态，一旦监控过syslog_aggregator组件中该进程不存活时，即刻重启该进程；另外，syslog_aggregator组件还将自身的信息通过cloud_agent传送给NATS，这里的信息包括syslog_aggregator组件所在的宿主机的存活状态以及资源使用情况。 以下通过monit监控进程的代码：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">check process syslog_aggregator  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">check process syslog_aggregator  
   with pidfile <span style="color:#3aa">/var/</span>vcap<span style="color:#555">/</span>sys<span style="color:#555">/</span>run<span style="color:#555">/</span>syslog_aggregator<span style="color:#555">/</span>syslog_aggregator<span style="color:#555">.</span>pid  
   start program <span style="color:#c30">&#34;/var/vcap/jobs/syslog_aggregator/bin/syslog_aggregator_ctl start&#34;</span>  
   stop program <span style="color:#c30">&#34;/var/vcap/jobs/syslog_aggregator/bin/syslog_aggregator_ctl stop&#34;</span>  
@@ -233,7 +233,7 @@
 <h2 id="日志管理模块"><strong>日志管理模块</strong></h2>
 
 <p>实现日志管理，syslog_aggregator是通过启动syslog_aggregator_ctl脚本来实现的。上文中提到的monit模块中，也正是监控这个脚本命令启动的进程。以下来分析一下该脚本的代码实现：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#099">#!/bin/bash  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#099">#!/bin/bash  
 </span><span style="color:#099"></span>
 <span style="color:#033">RUN_DIR</span><span style="color:#555">=</span>/var/vcap/sys/run/syslog_aggregator  
 <span style="color:#033">LOG_DIR</span><span style="color:#555">=</span>/var/vcap/store/log  
@@ -280,68 +280,68 @@
 
 <span style="color:#069;font-weight:bold">esac</span>  </code></pre></div>
 <p>在通过该脚本来实现启动syslog_aggregator进程的时候，使用的是start命令。进入start命令，可以看到，安装了rsyslog-relp；然后通过/var/vcap/packages/common/utils.sh中定义的pid_guard()方法来实现对该进程pid的保护，当系统中已经由相应的进程以该pid在运行时，删除该进程，以保证syslog_aggregator可以按预先设置的pid进行运行；随后创建几个定义好的目录，RUN_DIR，LOG_DIR，还对LOG_DIR进行拥有用户修改。 脚本中随后的5行代码，涉及到的是Linux操作系统中cron 定期任务删除与添加的实现：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">rm -f /etc/cron.daily/bzip_old_logs  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">rm -f /etc/cron.daily/bzip_old_logs  
 cp -a <span style="color:#033">$BIN_DIR</span>/gzip_old_logs /etc/cron.daily  
 cp -a <span style="color:#033">$BIN_DIR</span>/reap_old_logs /etc/cron.hourly  
 cp -a <span style="color:#033">$BIN_DIR</span>/symlink_logs /etc/cron.hourly  
 cp -a <span style="color:#033">$PACKAGE_DIR</span>/send_error_mail /etc/cron.daily  </code></pre></div>
 <p>首先在每日的执行任务中删除掉bzip_old_logs任务，如果该任务存在的话；随后将4个任务分别加入到了指定的目录位置，分别是：gzip_old_logs, reap_old_logs, symlink_logs, send_error_mail。也就是让Linux操作系统每天一次执行gzip_old_logs脚本，每小时执行一次reap_old_logs脚本，每小时执行一次symlink_logs脚本，每周一次执行一次send_error_mail脚本。 添加完这些定义任务之后，syslog_aggregator随后启动了rsyslog server，实现日志服务器的启动：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#366">exec</span> /usr/sbin/rsyslogd -f <span style="color:#033">$JOB_DIR</span>/config/rsyslogd.conf -i <span style="color:#033">$PIDFILE</span> -c <span style="color:#f60">4</span> <span style="color:#c30;font-weight:bold">\ </span> 
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#366">exec</span> /usr/sbin/rsyslogd -f <span style="color:#033">$JOB_DIR</span>/config/rsyslogd.conf -i <span style="color:#033">$PIDFILE</span> -c <span style="color:#f60">4</span> <span style="color:#c30;font-weight:bold">\ </span> 
          &gt;&gt;<span style="color:#033">$LOG_DIR</span>/rsyslogd.stdout.log <span style="color:#c30;font-weight:bold">\ </span> 
          2&gt;&gt;<span style="color:#033">$LOG_DIR</span>/rsyslogd.stderr.log  </code></pre></div>
 <p>启动rsyslog server的具体配置可以参看rsyslogd.conf的各参数:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#033">$MaxMessageSize</span> 4k  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#033">$MaxMessageSize</span> 4k  
 
-<span style="color:#09f;font-style:italic"># Caveat - This always binds to all interfaces (cannot specify otherwise).  </span>
+<span style="color:#09f;font-style:italic"># Caveat - This always binds to all interfaces (cannot specify otherwise).</span>  
 <span style="color:#033">$ModLoad</span> imtcp  
 <span style="color:#033">$InputTCPMaxSessions</span> <span style="color:#f60">1024</span>  
 <span style="color:#033">$InputTCPServerRun</span> <span style="color:#f60">54321</span>  
 <span style="color:#033">$PrivDropToUser</span> vcap  
 <span style="color:#033">$PrivDropToGroup</span> vcap  
 
-<span style="color:#09f;font-style:italic"># Write each component&#39;s messages to a separate log  </span>
-<span style="color:#09f;font-style:italic"># programname is assumed to be &#39;vcap.&lt;component&gt;&#39;  </span>
-<span style="color:#09f;font-style:italic"># Directory is created automatically  </span>
+<span style="color:#09f;font-style:italic"># Write each component&#39;s messages to a separate log</span>  
+<span style="color:#09f;font-style:italic"># programname is assumed to be &#39;vcap.&lt;component&gt;&#39;</span>  
+<span style="color:#09f;font-style:italic"># Directory is created automatically</span>  
 <span style="color:#033">$template</span> VcapComponentLogFile, <span style="color:#c30">&#34;/var/vcap/store/log/%programname:6:</span>$<span style="color:#c30">%/%</span><span style="color:#033">$year</span><span style="color:#c30">%/%</span><span style="color:#033">$month</span><span style="color:#c30">%/%</span><span style="color:#033">$day</span><span style="color:#c30">%/%programname:6:</span>$<span style="color:#c30">%.log&#34;</span>  
 <span style="color:#033">$template</span> VcapComponentLogFormat, <span style="color:#c30">&#34;%fromhost-ip% -- %msg%\n&#34;</span>  
 
-<span style="color:#09f;font-style:italic"># The initial &#39;-&#39; tells rsyslogd to not sync the file after each write  </span>
+<span style="color:#09f;font-style:italic"># The initial &#39;-&#39; tells rsyslogd to not sync the file after each write</span>  
 :programname, startswith, <span style="color:#c30">&#34;vcap.&#34;</span> -?VcapComponentLogFile;VcapComponentLogFormat  
 
-<span style="color:#09f;font-style:italic"># Prevent them from reaching anywhere else  </span>
+<span style="color:#09f;font-style:italic"># Prevent them from reaching anywhere else</span>  
 :programname, startswith, <span style="color:#c30">&#34;vcap.&#34;</span> ~  </code></pre></div>
 <p>当然有server的话，自然会accept来自client的请求，所以在Cloud Foundry中每个组件都会安装一个resyslog的client端，然后启动该client，连接rsyslog server，并发送日志请求，以此来实现日志的传输，又通过刚才涉及到的那些脚本实现对日志的管理。 以下分析添加到周期性任务中的脚本功能。 1.gzip_old_logs 该脚本的实现很简单，如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#099">#!/bin/bash  
-</span><span style="color:#099"></span><span style="color:#09f;font-style:italic"># Compress log files that haven&#39;t changed in the last day  </span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#099">#!/bin/bash  
+</span><span style="color:#099"></span><span style="color:#09f;font-style:italic"># Compress log files that haven&#39;t changed in the last day</span>  
 find /var/vcap/store/log -type f -mmin +1440 -name <span style="color:#c30">&#39;*.log&#39;</span> -exec gzip <span style="color:#c30">&#39;{}&#39;</span> <span style="color:#c30;font-weight:bold">\;</span>  </code></pre></div>
 <p>功能为找到/var/vcap/store/log目录下，1440分钟（24小时）内没有被修改的文件，然后进行压缩操作。 2.symlink_logs 该脚本实现的是：为每一个当天的创建出来的文件创建符号链接，<code>date + %Y</code>执行结果为执行时的年份，依此类推。代码如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#099">#!/bin/bash  
-</span><span style="color:#099"></span><span style="color:#09f;font-style:italic"># create symlinks to today&#39;s logs in /var/vcap/store/log  </span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#099">#!/bin/bash  
+</span><span style="color:#099"></span><span style="color:#09f;font-style:italic"># create symlinks to today&#39;s logs in /var/vcap/store/log</span>  
 <span style="color:#069;font-weight:bold">for</span> x in /var/vcap/store/log/*/<span style="color:#c30">`</span>date +%Y<span style="color:#c30">`</span>/<span style="color:#c30">`</span>date +%m<span style="color:#c30">`</span>/<span style="color:#c30">`</span>date +%d<span style="color:#c30">`</span>/* ; <span style="color:#069;font-weight:bold">do</span> <span style="color:#069;font-weight:bold">if</span> <span style="color:#555">[</span> -f <span style="color:#c30">&#34;</span><span style="color:#033">$x</span><span style="color:#c30">&#34;</span> <span style="color:#555">]</span>; <span style="color:#069;font-weight:bold">then</span> ln -sf <span style="color:#c30">&#34;</span><span style="color:#033">$x</span><span style="color:#c30">&#34;</span> /var/vcap/store/log; <span style="color:#069;font-weight:bold">fi</span>; <span style="color:#069;font-weight:bold">done</span>  </code></pre></div>
 <p>3.reap_old_logs 该脚本实现的是：清除保存已超过7天的日志。代码如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#099">#!/bin/bash  
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#099">#!/bin/bash  
 </span><span style="color:#099"></span>
 <span style="color:#366">set</span> -u  
 
 <span style="color:#033">LOG_DIR</span><span style="color:#555">=</span>/var/vcap/store/log  
-<span style="color:#09f;font-style:italic"># Reap logs that are older than 7 days  </span>
+<span style="color:#09f;font-style:italic"># Reap logs that are older than 7 days</span>  
 <span style="color:#033">DAYS_TO_KEEP</span><span style="color:#555">=</span><span style="color:#f60">7</span>  
 <span style="color:#366">let</span> <span style="color:#c30">&#34;MIN_TO_KEEP=</span><span style="color:#a00">${</span><span style="color:#033">DAYS_TO_KEEP</span><span style="color:#a00">}</span><span style="color:#c30">*24*60&#34;</span>  
 
-<span style="color:#09f;font-style:italic"># get the last $DAYS_TO_KEEP date to exclude from the rmdir  </span>
+<span style="color:#09f;font-style:italic"># get the last $DAYS_TO_KEEP date to exclude from the rmdir</span>  
 
 <span style="color:#033">DAYS_TO_EXCLUDE</span><span style="color:#555">=</span><span style="color:#069;font-weight:bold">$(</span>  
 <span style="color:#069;font-weight:bold">for</span> i in <span style="color:#069;font-weight:bold">$(</span>seq <span style="color:#f60">0</span> <span style="color:#a00">${</span><span style="color:#033">DAYS_TO_KEEP</span><span style="color:#a00">}</span><span style="color:#069;font-weight:bold">)</span>; <span style="color:#069;font-weight:bold">do</span>  
 date -d <span style="color:#c30">&#34;now - </span><span style="color:#033">$i</span><span style="color:#c30"> days&#34;</span> +%Y/%m/%d  
 <span style="color:#069;font-weight:bold">done</span>  
 <span style="color:#069;font-weight:bold">)</span>  
-<span style="color:#09f;font-style:italic"># example output: &#34;2012/09/21|2012/09/20|.....|2012/09/15|2012/09/14&#34;  </span>
+<span style="color:#09f;font-style:italic"># example output: &#34;2012/09/21|2012/09/20|.....|2012/09/15|2012/09/14&#34;</span>  
 <span style="color:#033">EGREP_FORMAT_DAYS_TO_EXCLUDE</span><span style="color:#555">=</span><span style="color:#069;font-weight:bold">$(</span><span style="color:#366">echo</span> <span style="color:#033">$DAYS_TO_EXCLUDE</span> | tr <span style="color:#c30">&#39; &#39;</span> <span style="color:#c30">&#39;|&#39;</span><span style="color:#069;font-weight:bold">)</span>  
 
 find <span style="color:#a00">${</span><span style="color:#033">LOG_DIR</span><span style="color:#a00">}</span> -mmin +<span style="color:#a00">${</span><span style="color:#033">MIN_TO_KEEP</span><span style="color:#a00">}</span> -name <span style="color:#c30">&#39;*.log.gz&#39;</span> -exec rm -f <span style="color:#c30">&#39;{}&#39;</span> <span style="color:#c30;font-weight:bold">\;</span>  
 
-<span style="color:#09f;font-style:italic"># Reap empty dirs in 3 passes, clear empty &#39;day&#39; dirs, then &#39;month&#39;  </span>
-<span style="color:#09f;font-style:italic"># and lastly &#39;year&#39;  </span>
+<span style="color:#09f;font-style:italic"># Reap empty dirs in 3 passes, clear empty &#39;day&#39; dirs, then &#39;month&#39;</span>  
+<span style="color:#09f;font-style:italic"># and lastly &#39;year&#39;</span>  
 <span style="color:#069;font-weight:bold">for</span> i in <span style="color:#c30">&#39;/[0-9]{4}/[0-1][0-9]/[0-9]{2}$&#39;</span> <span style="color:#c30;font-weight:bold">\ </span> 
          <span style="color:#c30">&#39;/[0-9]{4}/[0-1][0-9]$&#39;</span> <span style="color:#c30;font-weight:bold">\ </span> 
          <span style="color:#c30">&#39;/[0-9]{4}$&#39;</span>; <span style="color:#069;font-weight:bold">do</span>  
@@ -600,7 +600,7 @@ find <span style="color:#a00">${</span><span style="color:#033">LOG_DIR</span><s
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -853,6 +853,19 @@ find <span style="color:#a00">${</span><span style="color:#033">LOG_DIR</span><s
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -874,19 +887,6 @@ find <span style="color:#a00">${</span><span style="color:#033">LOG_DIR</span><s
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 
