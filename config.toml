@@ -1,0 +1,191 @@
+# 网站的根URL
+# baseURL = "https://Rachel-Shao.github.io/"
+baseURL = "http://www.sel.zju.edu.cn/"
+# 首页的标题
+title = "浙大SEL实验室"
+# 默认的语言
+languageCode = "zh-cn"
+defaultContentLanguage = "zh-cn"
+
+## 评论部分
+# 值为空的话则不启用disqus，因为需要翻墙才能访问，所以我们不启用
+disqusShortname = ""
+# 畅言
+# changyan = "true"
+
+# 取消默认的代码高亮，我们使用prism代码高亮
+pygmentsUseClasses = false
+pygmentCodeFences = true
+pygmentsStyle="manni"
+
+# 每页显示的文章数量用于分页
+paginate = 10
+
+#主题
+# theme = "hugo-universal-theme"
+
+# 摘要显示句子数
+summaryLength = 1  # 摘要显示的段落数
+
+[author]
+    name = "浙江大学SEL实验室" 
+
+[menu]
+
+# 板块化分
+# 权重对应在页面上显示的次序
+
+[[menu.main]]
+    identifier="home"
+    name = "主页"
+    url  = "/"
+    weight = 1
+
+[[menu.main]]
+    identifier = "blog" 
+    name = "博客"
+    url  = "/blog/"
+    weight = 2
+
+[[menu.main]]
+    name = "社区"
+    identifier = "community"
+    url  = "/community/"
+    weight = 3
+
+[[menu.main]]
+    name="归档"
+    identifier = "archives"
+    url = "/archives/"
+    weight = 4
+
+[[menu.main]]
+    identifier="contact"
+    name = "关于"
+    url  = "/contact/"
+    weight = 5
+
+
+# 配置参数，HTML中可以引用
+[params]
+    viewMorePostLink = "/blog/"
+    author = "浙大SEL实验室"
+    # 文章默认的SEO设置
+    # defaultKeywords = ["浙大SEL实验室"]
+    # defaultDescription = "浙大SEL实验室"
+    # 底部邮件内容框
+    # email = "502361391@qq.com"
+    # contact_form_ajax = false
+
+    # latitude = "-12.043333"
+    # longitude = "-77.028333"
+    # direction = "Desamparados Station, Distrito de Lima 15001, Peru"
+
+    # 浏览器中看到每一页的后缀，与原文标题使用·分隔
+    # description = "浙大SEL实验室官方网站"
+
+    # 留空，不启用谷歌地图
+    # googleMapsApiKey = ""
+    # Baidu统计的token
+    # baiduKey="761ec5e305f799778975c1f71c47a520"
+
+    # 选用的 CSS，可选的有：default（浅蓝）、blue、green、marsala,、pink、red、turquoise、violet
+    style = "default"
+
+    # 404页面显示的图片
+    # errorimage = "https://ws1.sinaimg.cn/large/00704eQkgy1frkahxdca2j30hd08wq52.jpg"
+    # 页脚显示的关于信息
+    about_us = "<p><strong>关于我们：<strong> <p>浙大SEL实验室</p><p>地址：杭州市浙大路38号曹光彪西楼405室</p><p><strong></strong>"
+    address = """<p><strong>联系我们: 
+                                    <p>团队负责人：丁轶群 yiqunding@zju.edu.cn</p>
+                                    <p>网站维护人：刘佳文 839809484@qq.com</p>                
+    </strong>"""
+    copyright = "Copyright ©️ 2020 SEL Laboratory , ZJ University all rights reserved."
+
+    # Go语言格式的时间模板
+    date_format = "2006-01-02"
+    # 网站logo
+    logo = "img/sel.png"
+
+[Permalinks]
+    blog = "/blog/:year/:month/:day/:filename/"
+    
+
+# 是否启用右侧的小工具
+[params.widgets]
+    categories = true
+    tags = true
+    search = true
+
+[params.topbar]
+    enable = true
+    # enable = false
+#    text = """<strong>
+#               <p>链接访问地址(右边小图标)→</p>
+#                <p>github</p>
+#               </strong>"""
+
+[[menu.topbar]]
+    weight = 1
+    name = "GitHub"
+    url = "https://github.com/ZJU-SEL"
+#    pre = "<i class='fas fa-2x fa-github' ></i>"
+
+#[[menu.topbar]]
+#    weight = 2
+#    name = "Facebook"
+#    url = "http://facebook.com"
+#    pre = "<i class='fas fa-2x fa-facebook'></i>"
+
+[params.carousel]
+    enable = true
+    # All carousel items are defined in their own files. You can find example items
+    # at 'exampleSite/data/carousel'.
+    # For more informtion take a look at the README.
+    # image = "img/banner.jpg"
+
+[params.features]
+    enable = false
+    # All features are defined in their own files. You can find example items
+    # at 'exampleSite/data/features'.
+    # For more informtion take a look at the README.
+
+[params.testimonials]
+    enable = true
+    # All testimonials are defined in their own files. You can find example items
+    # at 'exampleSite/data/testimonials'.
+    # For more informtion take a look at the README.
+    title = "浙大SEL实验室"
+    subtitle = "以下是浙大SEL实验室的负责人："
+    # 浙江大学软件工程实验室（Software Engineering Lab）从属于浙江大学超大规模信息系统研究中心，由丁轶群博士于2011年成立，依托浙江大学计算机理论和应用工程基础研究，扎根于工业界前沿与先进技术领域，致力在云计算平台技术基础上研究关键领域面临的超大规模信息系统问题，通过理论探索和工程实践的有机结合，寻求关键领域信息化发展的突破。
+
+[params.clients]
+    enable = true
+    # All clients are defined in their own files. You can find example items
+    # at 'exampleSite/data/clients'.
+    # For more informtion take a look at the README.
+    title = "社区列表"
+    subtitle = ""
+
+[params.see_more]
+    enable = true
+    icon = ""
+    title = "关于我们"
+    subtitle = "浙大SEL实验室 "
+    link_url = "/contact"
+    link_text = "浙大SEL实验室的详细介绍"
+
+[params.recent_posts]
+    enable = true
+    title = "最新博客"
+    subtitle = "最新的开源研究和源码分析都在这里"
+
+
+[markup]
+  defaultMarkdownHandler = "blackfriday"
+
+
+
+
+
+

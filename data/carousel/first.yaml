@@ -1,0 +1,15 @@
+weight: 1
+title: "浙大SEL实验室"
+description: >
+  <ul class="list-style-none">
+    <li>如有问题请联系：</li>
+    <li>刘同学：839809484@qq.com</li>
+    <li>陈同学：421224811@qq.com</li>
+    <li>邵同学：1224051120@qq.com</li>
+  </ul>
+image: "img/homePage/think.jpg"
+image_1: "img/homePage/pic_1.png"
+image_2: "img/homePage/pic_2.jpg"
+image_3: "img/homePage/pic_3.jpg"
+image_4: "img/homePage/pic_4.jpg"
+image_5: "img/homePage/pic_5.jpg"

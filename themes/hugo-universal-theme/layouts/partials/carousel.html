@@ -1,0 +1,172 @@
+<!-- 最新版本 -->
+{{ if isset .Site.Params "carousel" }}
+{{ if .Site.Params.carousel.enable }}
+{{ if gt (len .Site.Data.carousel) 0 }}
+<section>
+    <!-- <style type="text/css">
+        .tab-btn{
+            position: absolute;
+            right: 40px;
+            bottom: 20px;
+            width: 120px;
+            height: 30px;
+            top: 270px;
+        }
+
+        .tab-btn .btn{
+        
+            float: left;
+            width: 12px;
+            height: 12px;
+            background: #FFFFFF;
+            border: 2px solid #FFFFFF;/*边框*/
+            margin-left: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        /*圆形按钮触碰事件*/
+        .tab-btn .btn:hover{
+            background: #7f7f7f;
+            border-color:#7f7f7f;
+        }
+        .tab-btn .active{
+            background: #7f7f7f;
+            border-color:#7f7f7f;
+        }
+    </style> -->
+
+
+    <div class="home-carousel">
+        <div class="dark-mask"></div>
+        <div class="container">
+            <div class="homepage owl-carousel">
+                {{ range sort .Site.Data.carousel "weight" }}
+                <div class="item">
+                    <div class="row">
+                        <div class="col-sm-5 right">
+                            <h1>{{ .title }}</h1>
+                            {{ .description | safeHTML }}
+                            {{ if .url }}
+                            <a href="{{ .url }}" class = "btn btn-template-main" >点击阅读</a>
+                            {{ end }}
+                        </div>
+                        <div class="col-sm-7" id="lunbo" >
+                            <!-- <img class="img-responsive" src="{{ .image }}" alt="{{ .alt }}"> -->
+                            <div class="big-pic">
+                                <ul>
+                                    <li class="pic_item" style="display: block; position: absolute; top: 0px; left: 0px;">
+                                    <!-- <li class="pic_item" style="display: block;"> -->
+                                        <img class="img-lunbo" src="{{ .image_1 }}" alt="{{ .alt }}">
+                                    </li>
+                                    <li class="pic_item" style="display: none; ; position: absolute; top: 0px; left: 0px;">
+                                    <!-- <li class="pic_item" style="display: none;"> -->
+                                        <img class="img-lunbo" src="{{ .image_2 }}" alt="{{ .alt }}">
+                                    </li>
+                                    <li class="pic_item" style="display: none; ; position: absolute; top: 0px; left: 0px;">
+                                        <!-- <li class="pic_item" style="display: none;"> -->
+                                        <img class="img-lunbo" src="{{ .image_3 }}" alt="{{ .alt }}">
+                                    </li>
+                                    <li class="pic_item" style="display: none; ; position: absolute; top: 0px; left: 0px;">
+                                        <!-- <li class="pic_item" style="display: none;"> -->
+                                        <img class="img-lunbo" src="{{ .image_4 }}" alt="{{ .alt }}">
+                                    </li>
+                                    <li class="pic_item" style="display: none; ; position: absolute; top: 0px; left: 0px;">
+                                        <!-- <li class="pic_item" style="display: none;"> -->
+                                        <img class="img-lunbo" src="{{ .image_5 }}" alt="{{ .alt }}">
+                                    </li>
+
+                                </ul>
+                            </div>
+                            <div class="tab-btn">
+                                <ul>
+                                    <li class="btn active"></li>
+                                    <li class="btn"></li>
+                                    <li class="btn"></li>
+                                    <li class="btn"></li>
+                                    <li class="btn"></li>
+                                </ul>
+                            </div>
+                            <div class="pic_title">
+                            </div>
+                        </div>
+                        <!-- <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script> -->
+                        <!-- <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.1.1/jquery.min.js"></script> -->
+                        <script type="text/javascript">
+                            // var index2 = 0;/*初始化一个变量 指向下彪*/
+                            // //点击点
+                            // $(".tab-btn .btn").click(function () {
+                            //     index2 = $(this).index();//获取点击该元素下彪
+                            //     $(this).addClass("active").siblings().removeClass("active");
+                            //     $(".pic_item").eq(index2).fadeIn().siblings().fadeOut();
+                            // });
+                            //点击切换效果
+                            // $(".lr-tab .right").click(function () {
+                            //     index2 ++;
+                            //     if (index2 >2){ index2 = 0;}
+                            //     $(".pic_item").eq(index2).fadeIn().siblings().fadeOut();
+                            //     $(".tab-btn .btn").eq(index2).addClass("active").siblings().removeClass("active");
+
+                            // });
+                            // $(".lr-tab .left").click(function () {
+                            //     index2 --;
+                            //     if(index2 < 0){index2 = 2;}
+                            //     $(".pic_item").eq(index2).fadeIn().siblings().fadeOut();
+                            //     $(".tab-btn .btn").eq(index2).addClass("active").siblings().removeClass("active");
+
+                            // });
+                            // var time2 = setInterval(function () {
+                            //     index2 ++;
+                            //     if (index2 >4){ index2 = 0;}
+                            //     $(".pic_item").eq(index2).fadeIn().siblings().fadeOut();
+                            //     $(".tab-btn .btn").eq(index2).addClass("active").siblings().removeClass("active");
+
+                            // },4000); //定时器 重复
+                        </script>
+                    </div>
+                </div>
+                {{ end }}
+            </div>
+            <!-- /.project owl-slider -->
+        </div>
+    </div>
+</section>
+{{ end }}
+{{ end }}
+{{ end }}
+
+
+
+
+
+
+<!-- {{ if isset .Site.Params "carousel" }}
+{{ if .Site.Params.carousel.enable }}
+{{ if gt (len .Site.Data.carousel) 0 }}
+<section>
+    <div class="home-carousel">
+        <div class="dark-mask"></div>
+        <div class="container">
+            <div class="homepage owl-carousel">
+                {{ range sort .Site.Data.carousel "weight" }}
+                <div class="item">
+                    <div class="row">
+                        <div class="col-sm-5 right">
+                            <h1>{{ .title }}</h1>
+                            {{ .description | safeHTML }}
+                            {{ if .url }}
+                            <a href="{{ .url }}" class = "btn btn-template-main" >点击阅读</a>
+                            {{ end }}
+                        </div>
+                        <div class="col-sm-7">
+                            <img class="img-responsive" src="{{ .image }}" alt="{{ .alt }}">
+                        </div>
+                    </div>
+                </div>
+                {{ end }}
+            </div>
+        </div>
+    </div>
+</section>
+{{ end }}
+{{ end }}
+{{ end }} -->

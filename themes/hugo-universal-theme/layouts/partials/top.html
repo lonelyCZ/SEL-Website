@@ -1,0 +1,22 @@
+{{ if .Site.Params.topbar.enable }}
+<header>
+  <div id="top" style="background-color:black;" >
+    <div class="container" >
+      <div class="row">
+        <div class="col-xs-5" style="height: auto;">
+          {{ .Site.Params.topbar.text | safeHTML }}
+        </div>
+        <div class="col-xs-7">
+          <div class="social">
+            {{ range .Site.Menus.topbar.ByWeight }}
+            <a href="{{ .URL }}" target="_blank" style="opacity: 1;">
+                <img src ="  img/github2.jpg " alt="github" class="img-responsive">
+            </a>
+            {{ end }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+{{ end }}
