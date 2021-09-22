@@ -6,7 +6,11 @@
     <description>Recent content in ccng on 浙大SEL实验室</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 03 Apr 2014 14:15:12 +0000</lastBuildDate><atom:link href="http://www.sel.zju.edu.cn/tags/ccng/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Thu, 03 Apr 2014 14:15:12 +0000</lastBuildDate>
+    
+	<atom:link href="http://www.sel.zju.edu.cn/tags/ccng/index.xml" rel="self" type="application/rss+xml" />
+    
+    
     <item>
       <title>Cloud_Controller_NG源码阅读记录</title>
       <link>http://www.sel.zju.edu.cn/blog/2014/04/03/ontroller-ng%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB%E8%AE%B0%E5%BD%95/</link>

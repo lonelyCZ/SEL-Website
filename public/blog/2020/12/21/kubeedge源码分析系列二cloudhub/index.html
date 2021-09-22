@@ -18,7 +18,7 @@
   
   <meta name="description" content="本文基于KubeEdge官方文档，加上作者的亲身实践，给出以下KubeEdge1.3.0版本下Cloudcore模块中cloudhub模组的源码分析。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -251,7 +251,7 @@
 <h3 id="入口">入口</h3>
 
 <p>Cloudhub在Cloudcore启动时注册，通过beehive消息通信框架调用Start()函数启动Cloudhub模块。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">cloudhub.<span style="color:#c0f">Register</span>(c.Modules.CloudHub, c.KubeAPIConfig)</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">cloudhub.<span style="color:#c0f">Register</span>(c.Modules.CloudHub, c.KubeAPIConfig)</code></pre></div>
 <h3 id="启动流程">启动流程</h3>
 
 <p>Cloudhub首先启动ObjectSyncController，ObjectSyncController是自定义的CRD对象ObjectSync和ClusterObjectSync的控制器，KubeEdge使用K8s CRD存储已成功发送到Edge的资源的最新resourceVersion。当cloudcore重新启动或正常启动时，它将检查resourceVersion以避免发送旧消息。ClusterObjectSync用于保存群集范围的对象，而ObjectSync用于保存命名空间范围的对象。 它们的名称由相关的节点名称和对象UUID组成。当前版本的ClusterObjectSync当前还未使用，属于代码编写阶段，未来会扩充。</p>
@@ -261,7 +261,7 @@
 <p>然后，启动cloudhub服务，具体的操作是启动一个服务器，等待edgecore发来连接的请求，协议可以是基于tcp的websocket或基于udp的quic。</p>
 
 <p>Cloudhub在服务器启动前会生成一个CloudhubHandler处理边端与云端的消息，结构体如下，主要包括KeepaliveInterval（心跳检测间隔）、WriteTimeout（写入msg的超时时间）、Nodes（存储node的在线情况）、nodeConns（存储connection）、nodeLocks（存储读写connection的互斥锁）、MessageQueue（消息队列）、KeepaliveChannel（心跳通道）、NodeLimit（节点限制，超过节点限制Cloudhub报错）、Handlers（通信的主要处理方法）、MessageAcks（消息确认）。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> MessageHandle <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> MessageHandle <span style="color:#069;font-weight:bold">struct</span> {
 	KeepaliveInterval <span style="color:#078;font-weight:bold">int</span>
 	WriteTimeout      <span style="color:#078;font-weight:bold">int</span>
 	Nodes             sync.Map
@@ -278,7 +278,7 @@
 <p>OnRegister方法调用ServeConn方法，ServeConn调用RegisterNode方法，完成节点的注册。节点的注册具体包含以下几步：1.分配消息队列和缓存给注册的节点。2.将连接的消息根据路由发送给DeviceController或EdgeController。3.将Node ID存入Nodes、nodeConns、nodeLocks这三个表。</p>
 
 <p>注册成功后循环启动messageHandler的handler协程，分别是KeepaliveCheckLoop检查edge-node是否alive、MessageWriteLoop处理所有写入请求、ListMessageWriteLoop处理所有list类型的请求。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">CloudhubHandler.Handlers = []HandleFunc{
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">CloudhubHandler.Handlers = []HandleFunc{
    CloudhubHandler.KeepaliveCheckLoop,
    CloudhubHandler.MessageWriteLoop,
    CloudhubHandler.ListMessageWriteLoop,
@@ -326,7 +326,7 @@
 <h3 id="messagequeue">MessageQueue</h3>
 
 <p>当每个边缘节点成功连接到云时，将创建一个消息队列，该消息队列将缓存所有发送到边缘节点的消息。KubeEdge使用来自kubernetes/client-go的workQueue和cacheStore来实现消息队列和对象存储。 使用Kubernetes workQueue，将合并重复事件以提高传输效率。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> ChannelMessageQueue <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> ChannelMessageQueue <span style="color:#069;font-weight:bold">struct</span> {
    queuePool sync.Map
    storePool sync.Map
 
@@ -337,22 +337,22 @@
 }</code></pre></div>
 <ul>
 <li><p>Add message to the queue:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">key,_<span style="color:#555">:=</span><span style="color:#c0f">getMsgKey</span>(<span style="color:#555">&amp;</span>message)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">key,_<span style="color:#555">:=</span><span style="color:#c0f">getMsgKey</span>(<span style="color:#555">&amp;</span>message)
 nodeStore.<span style="color:#c0f">Add</span>(message)
 nodeQueue.<span style="color:#c0f">Add</span>(key)</code></pre></div></li>
 
 <li><p>Get the message from the queue:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">key,_<span style="color:#555">:=</span>nodeQueue.<span style="color:#c0f">Get</span>()
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">key,_<span style="color:#555">:=</span>nodeQueue.<span style="color:#c0f">Get</span>()
 msg,_,_<span style="color:#555">:=</span>nodeStore.<span style="color:#c0f">GetByKey</span>(key.(<span style="color:#078;font-weight:bold">string</span>))</code></pre></div></li>
 
 <li><p>Structure of the message key:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">Key = resourceType<span style="color:#555">/</span>resourceNamespace<span style="color:#555">/</span>resourceName</code></pre></div></li>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">Key = resourceType<span style="color:#555">/</span>resourceNamespace<span style="color:#555">/</span>resourceName</code></pre></div></li>
 </ul>
 
 <h3 id="ack-message-format">ACK message Format</h3>
 
 <p>Ack消息将遵循以下格式：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">AckMessage.ParentID = receivedMessage.ID
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">AckMessage.ParentID = receivedMessage.ID
 AckMessage.Operation = <span style="color:#c30">&#34;response&#34;</span></code></pre></div>
 <p>由此实现了以下不同情况的相应处理：</p>
 
@@ -609,7 +609,7 @@ AckMessage.Operation = <span style="color:#c30">&#34;response&#34;</span></code>
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -862,6 +862,19 @@ AckMessage.Operation = <span style="color:#c30">&#34;response&#34;</span></code>
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -883,19 +896,6 @@ AckMessage.Operation = <span style="color:#c30">&#34;response&#34;</span></code>
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

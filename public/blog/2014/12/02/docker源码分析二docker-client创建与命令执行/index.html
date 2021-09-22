@@ -18,7 +18,7 @@
   
   <meta name="description" content="如今，Docker作为业界领先的轻量级虚拟化容器管理引擎，给全球开发者提供了一种新颖、便捷的软件集成测试与部署之道。在团队开发软件时，Docker可以提供可复用的运行环境、灵活的资源配置、便捷的集成测试方法以及一键式的部署方式。可以说，Docker的优势在简化持续集成、运维部署方面体现得淋漓尽致，它完全让开发者从前者中解放出来，把精力真正地倾注在开发上。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -237,7 +237,7 @@
 <p>众所周知，在Docker的具体实现中，Docker Server与Docker Client均由可执行文件docker来完成创建并启动。那么，了解docker可执行文件通过何种方式区分两者，就显得尤为重要。 对于两者，首先举例说明其中的区别。Docker Server的启动，命令为docker -d或docker &ndash;daemon=true；而Docker Client的启动则体现为docker &ndash;daemon=false ps、docker pull NAME等。 可以把以上Docker请求中的参数分为两类：第一类为命令行参数，即docker程序运行时所需提供的参数，如: -D、&ndash;daemon=true、&ndash;daemon=false等；第二类为docker发送给Docker Server的实际请求参数，如：ps、pull NAME等。</p>
 
 <p>对于第一类，我们习惯将其称为flag参数，在go语言的标准库中，同时还提供了一个<a href="https://github.com/docker/docker/blob/master/pkg/mflag/flag.go">flag包</a>，方便进行命令行参数的解析。 交待以上背景之后，随即进入实现Docker Client创建的源码，位于<a href="https://github.com/docker/docker/blob/v1.2.0/docker/docker.go">./docker/docker/docker.go</a>，在该go文件中，包含了整个Docker的main函数，也就是整个Docker（不论Docker Daemon还是Docker Client）的运行入口。部分main函数代码如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">main</span>() {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">main</span>() {
         <span style="color:#069;font-weight:bold">if</span> reexec.<span style="color:#c0f">Init</span>() {
             <span style="color:#069;font-weight:bold">return</span>
         }
@@ -246,7 +246,7 @@
 </span><span style="color:#09f;font-style:italic"></span>        <span style="color:#a00;background-color:#faa">……</span>
 }</code></pre></div>
 <p>在以上代码中，首先判断reexec.Init()方法的返回值，若为真，则直接退出运行，否则的话继续执行。查看位于./docker/reexec/reexec.go中<a href="https://github.com/docker/docker/blob/v1.2.0/reexec/reexec.go#L23">reexec.Init()</a>的定义，可以发现由于在docker运行之前没有任何的Initializer注册，故该代码段执行的返回值为假。 紧接着，main函数通过调用flag.Parse()解析命令行中的flag参数。查看源码可以发现Docker在<a href="https://github.com/docker/docker/blob/v1.2.0/docker/docker.go">./docker/docker/flag.go</a>中定义了多个flag参数，并通过init函数进行初始化。代码如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">var</span> (
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">var</span> (
     flVersion     = flag.<span style="color:#c0f">Bool</span>([]<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;v&#34;</span>, <span style="color:#c30">&#34;-version&#34;</span>}, <span style="color:#069;font-weight:bold">false</span>, <span style="color:#c30">&#34;Print version information and quit&#34;</span>)
     flDaemon      = flag.<span style="color:#c0f">Bool</span>([]]<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;d&#34;</span>, <span style="color:#c30">&#34;-daemon&#34;</span>}, <span style="color:#069;font-weight:bold">false</span>, <span style="color:#c30">&#34;Enable daemon mode&#34;</span>)
     flDebug       = flag.<span style="color:#c0f">Bool</span>([]<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;D&#34;</span>, <span style="color:#c30">&#34;-debug&#34;</span>}, <span style="color:#069;font-weight:bold">false</span>, <span style="color:#c30">&#34;Enable debug mode&#34;</span>)
@@ -318,16 +318,16 @@
 </ul>
 
 <p>随即分析处理这些flag参数信息，以及配置信息。 在flag.Parse()之后的代码如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#555">*</span>flVersion {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#555">*</span>flVersion {
     <span style="color:#c0f">showVersion</span>()
     <span style="color:#069;font-weight:bold">return</span>
 }</code></pre></div>
 <p>不难理解的是，当经过解析flag参数后，若flVersion参数为真时，调用showVersion()显示版本信息，并从main函数退出；否则的话，继续往下执行。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#555">*</span>flDebug {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#555">*</span>flDebug {
     os.<span style="color:#c0f">Setenv</span>(<span style="color:#c30">&#34;DEBUG&#34;</span>, <span style="color:#c30">&#34;1&#34;</span>)
 }</code></pre></div>
 <p>若flDebug参数为真的话，通过os包的中Setenv函数创建一个名为DEBUG的系统环境变量，并将其值设为”1”。继续往下执行。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#366">len</span>(flHosts) <span style="color:#555">==</span> <span style="color:#f60">0</span> {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#366">len</span>(flHosts) <span style="color:#555">==</span> <span style="color:#f60">0</span> {
     defaultHost <span style="color:#555">:=</span> os.<span style="color:#c0f">Getenv</span>(<span style="color:#c30">&#34;DOCKER_HOST&#34;</span>)
     <span style="color:#069;font-weight:bold">if</span> defaultHost <span style="color:#555">==</span> <span style="color:#c30">&#34;&#34;</span> <span style="color:#555">||</span> <span style="color:#555">*</span>flDaemon {
         <span style="color:#09f;font-style:italic">// If we do not have a host, default to unix socket
@@ -339,22 +339,22 @@
     flHosts = <span style="color:#366">append</span>(flHosts, defaultHost)
 }</code></pre></div>
 <p>以上的源码主要分析内部变量flHosts。flHosts的作用是为Docker Client提供所要连接的host对象，也为Docker Server提供所要监听的对象。 分析过程中，首先判断flHosts变量是否长度为0，若是的话，通过os包获取名为DOCKER_HOST环境变量的值，将其赋值于defaultHost。若defaultHost为空或者flDaemon为真的话，说明目前还没有一个定义的host对象，则将其默认设置为unix socket，值为api.DEFAULTUNIXSOCKET，该常量位于<a href="https://github.com/docker/docker/blob/v1.2.0/api/common.go#L17">./docker/api/common.go</a>，值为&rdquo;/var/run/docker.sock&rdquo;，故defaultHost为”unix:///var/run/docker.sock”。验证该defaultHost的合法性之后，将defaultHost的值追加至flHost的末尾。继续往下执行。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#555">*</span>flDaemon {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#555">*</span>flDaemon {
     <span style="color:#c0f">mainDaemon</span>()
     <span style="color:#069;font-weight:bold">return</span>
 }</code></pre></div>
 <p>若flDaemon参数为真的话，则执行mainDaemon函数，实现Docker Daemon的启动，若mainDaemon函数执行完毕，则退出main函数，一般mainDaemon函数不会主动终结。由于本章节介绍Docker Client的启动，故假设flDaemon参数为假，不执行以上代码块。继续往下执行。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#366">len</span>(flHosts) &gt; <span style="color:#f60">1</span> {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#366">len</span>(flHosts) &gt; <span style="color:#f60">1</span> {
     log.<span style="color:#c0f">Fatal</span>(<span style="color:#c30">&#34;Please specify only one -H&#34;</span>)
 protoAddrParts <span style="color:#555">:=</span> strings.<span style="color:#c0f">SplitN</span>(flHosts[<span style="color:#f60">0</span>], <span style="color:#c30">&#34;://&#34;</span>, <span style="color:#f60">2</span>)</code></pre></div>
 <p>以上，若flHosts的长度大于1的话，则抛出错误日志。接着将flHosts这个string数组中的第一个元素，进行分割，通过”://”来分割，分割出的两个部分放入变量protoAddrParts数组中。protoAddrParts的作用为解析出与Docker Server建立通信的协议与地址，为Docker Client创建过程中不可或缺的配置信息之一。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">var</span> (
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">var</span> (
     cli       <span style="color:#555">*</span>client.DockerCli
     tlsConfig tls.Config
 )
 tlsConfig.InsecureSkipVerify = <span style="color:#069;font-weight:bold">true</span></code></pre></div>
 <p>由于之前已经假设过flDaemon为假，则可以认定main函数的运行是为了Docker Client的创建与执行。在这里创建两个变量：一个为类型是client.DockerCli指针的对象cli，另一个为类型是tls.Config的对象tlsConfig。并将tlsConfig的InsecureSkipVerify属性设置为真。TlsConfig对象的创建是为了保障cli在传输数据的时候，遵循安全传输层协议(TLS)。安全传输层协议(TLS) 用于两个通信应用程序之间保密性与数据完整性，该协议有两层组成：TLS记录协议和TLS握手协议。tlsConfig是Docker Client创建过程中可选的配置信息。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// If we should verify the server, we need to load a trusted ca
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// If we should verify the server, we need to load a trusted ca
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">if</span> <span style="color:#555">*</span>flTlsVerify {
     <span style="color:#555">*</span>flTls = <span style="color:#069;font-weight:bold">true</span>
     certPool <span style="color:#555">:=</span> x509.<span style="color:#c0f">NewCertPool</span>()
@@ -367,7 +367,7 @@ tlsConfig.InsecureSkipVerify = <span style="color:#069;font-weight:bold">true</s
     tlsConfig.InsecureSkipVerify = <span style="color:#069;font-weight:bold">false</span>
 }</code></pre></div>
 <p>若flTlsVerify这个flag参数为真的话，则说明需要验证server端的安全性，tlsConfig对象需要加载一个受信的ca文件。该ca文件的路径为*flCA参数的值，最终完成tlsConfig对象中RootCAs属性的赋值，并将InsecureSkipVerify属性置为假。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// If tls is enabled, try to load and send client certificates
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// If tls is enabled, try to load and send client certificates
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">if</span> <span style="color:#555">*</span>flTls <span style="color:#555">||</span> <span style="color:#555">*</span>flTlsVerify {
     _, errCert <span style="color:#555">:=</span> os.<span style="color:#c0f">Stat</span>(<span style="color:#555">*</span>flCert)
     _, errKey <span style="color:#555">:=</span> os.<span style="color:#c0f">Stat</span>(<span style="color:#555">*</span>flKey)
@@ -385,13 +385,13 @@ tlsConfig.InsecureSkipVerify = <span style="color:#069;font-weight:bold">true</s
 <h3 id="3-3-docker-client的启动"><strong>3.3. Docker Client的启动</strong></h3>
 
 <p>Docker Client的创建其实就是在已有配置参数信息的情况，通过Client包中的NewDockerCli方法创建一个实例cli，源码实现如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#555">*</span>flTls <span style="color:#555">||</span> <span style="color:#555">*</span>flTlsVerify {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#555">*</span>flTls <span style="color:#555">||</span> <span style="color:#555">*</span>flTlsVerify {
     cli = client.<span style="color:#c0f">NewDockerCli</span>(os.Stdin, os.Stdout, os.Stderr, protoAddrParts[<span style="color:#f60">0</span>], protoAddrParts[<span style="color:#f60">1</span>], <span style="color:#555">&amp;</span>tlsConfig)
 } <span style="color:#069;font-weight:bold">else</span> {
     cli = client.<span style="color:#c0f">NewDockerCli</span>(os.Stdin, os.Stdout, os.Stderr, protoAddrParts[<span style="color:#f60">0</span>], protoAddrParts[<span style="color:#f60">1</span>], <span style="color:#069;font-weight:bold">nil</span>)
 }</code></pre></div>
 <p>如果flag参数flTls为真或者flTlsVerify为真的话，则说明需要使用TLS协议来保障传输的安全性，故创建Docker Client的时候，将TlsConfig参数传入；否则的话，同样创建Docker Client，只不过TlsConfig为nil。 关于Client包中的NewDockerCli函数的实现，可以具体参见<a href="https://github.com/docker/docker/blob/v1.2.0/api/client/cli.go#L81">./docker/api/client/cli.go</a>。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">NewDockerCli</span>(in io.ReadCloser, out, err io.Writer, proto, addr <span style="color:#078;font-weight:bold">string</span>, tlsConfig <span style="color:#555">*</span>tls.Config) <span style="color:#555">*</span>DockerCli {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">NewDockerCli</span>(in io.ReadCloser, out, err io.Writer, proto, addr <span style="color:#078;font-weight:bold">string</span>, tlsConfig <span style="color:#555">*</span>tls.Config) <span style="color:#555">*</span>DockerCli {
     <span style="color:#069;font-weight:bold">var</span> (
         isTerminal = <span style="color:#069;font-weight:bold">false</span>
         terminalFd <span style="color:#078;font-weight:bold">uintptr</span>
@@ -433,7 +433,7 @@ tlsConfig.InsecureSkipVerify = <span style="color:#069;font-weight:bold">true</s
 <h3 id="4-1-docker-client解析请求命令"><strong>4.1. Docker Client解析请求命令</strong></h3>
 
 <p>Docker Client解析请求命令的工作，在Docker命令执行部分第一个完成，直接进入main函数之后的<a href="https://github.com/docker/docker/blob/v1.2.0/docker/docker.go#L102">源码部分</a>：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> cli.<span style="color:#c0f">Cmd</span>(flag.<span style="color:#c0f">Args</span>()<span style="color:#555">...</span>); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> cli.<span style="color:#c0f">Cmd</span>(flag.<span style="color:#c0f">Args</span>()<span style="color:#555">...</span>); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
     <span style="color:#069;font-weight:bold">if</span> sterr, ok <span style="color:#555">:=</span> err.(<span style="color:#555">*</span>utils.StatusError); ok {
         <span style="color:#069;font-weight:bold">if</span> sterr.Status <span style="color:#555">!=</span> <span style="color:#c30">&#34;&#34;</span> {
             log.<span style="color:#c0f">Println</span>(sterr.Status)
@@ -443,7 +443,7 @@ tlsConfig.InsecureSkipVerify = <span style="color:#069;font-weight:bold">true</s
     log.<span style="color:#c0f">Fatal</span>(err)
 }</code></pre></div>
 <p>查阅以上源码，可以发现，正如之前所说，首先解析存放于flag.Args()中的具体请求参数，执行的函数为cli对象的Cmd函数。进入<a href="https://github.com/docker/docker/blob/v1.2.0/api/client/cli.go#L51">./docker/api/client/cli.go的Cmd函数</a>：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Cmd executes the specified command
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Cmd executes the specified command
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (cli <span style="color:#555">*</span>DockerCli) <span style="color:#c0f">Cmd</span>(args <span style="color:#555">...</span><span style="color:#078;font-weight:bold">string</span>) <span style="color:#078;font-weight:bold">error</span> {
     <span style="color:#069;font-weight:bold">if</span> <span style="color:#366">len</span>(args) &gt; <span style="color:#f60">0</span> {
         method, exists <span style="color:#555">:=</span> cli.<span style="color:#c0f">getMethod</span>(args[<span style="color:#f60">0</span>])
@@ -464,59 +464,54 @@ tlsConfig.InsecureSkipVerify = <span style="color:#069;font-weight:bold">true</s
 <p>上一节通过一系列的命令解析，最终找到了具体的命令的执行方法，本节内容主要介绍Docker Client如何通过该执行方法处理并发送请求。 由于不同的请求内容不同，执行流程大致相同，本节依旧以一个例子来阐述其中的流程，例子为：docker pull NAME。 Docker Client在执行以上请求命令的时候，会执行CmdPull函数，传入参数为args[1:]&hellip;。源码具体为<a href="https://github.com/docker/docker/blob/v1.2.0/api/client/commands.go#L1183">./docker/api/client/command.go中的CmdPull函数</a>。 以下逐一分析CmdPull的源码实现。</p>
 
 <p>(1)</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">cmd <span style="color:#555">:=</span> cli.<span style="color:#c0f">Subcmd</span>(<span style="color:#c30">&#34;pull&#34;</span>, <span style="color:#c30">&#34;NAME[:TAG]&#34;</span>, <span style="color:#c30">&#34;Pull an image or a repository from the registry&#34;</span>) 
-</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">cmd <span style="color:#555">:=</span> cli.<span style="color:#c0f">Subcmd</span>(<span style="color:#c30">&#34;pull&#34;</span>, <span style="color:#c30">&#34;NAME[:TAG]&#34;</span>, <span style="color:#c30">&#34;Pull an image or a repository from the registry&#34;</span>) </code></pre></div>
 <p>通过cli包中的Subcmd方法定义一个类型为Flagset的对象cmd；</p>
 
 <p>(2)</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">tag <span style="color:#555">:=</span> cmd.<span style="color:#c0f">String</span>([]<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;#t&#34;</span>, <span style="color:#c30">&#34;#-tag&#34;</span>}, <span style="color:#c30">&#34;&#34;</span>, <span style="color:#c30">&#34;Download tagged image in a repository&#34;</span>) 
-</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">tag <span style="color:#555">:=</span> cmd.<span style="color:#c0f">String</span>([]<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;#t&#34;</span>, <span style="color:#c30">&#34;#-tag&#34;</span>}, <span style="color:#c30">&#34;&#34;</span>, <span style="color:#c30">&#34;Download tagged image in a repository&#34;</span>) </code></pre></div>
 <p>给cmd对象定义一个类型为String的flag，名为”#t”或”#-tag”，初始值为空。</p>
 
 <p>(3)</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> cmd.<span style="color:#c0f">Parse</span>(args); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> { 
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> cmd.<span style="color:#c0f">Parse</span>(args); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> { 
     <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">nil</span>
 }</code></pre></div>
 <p>将args参数进行解析，解析过程中，先提取出是否有符合tag这个flag的参数，若有，将其给赋值给tag参数，其余的参数存入cmd.NArg();若无的话，所有的参数存入cmd.NArg()中。</p>
 
 <p>(4)</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> cmd.<span style="color:#c0f">NArg</span>() <span style="color:#555">!=</span> <span style="color:#f60">1</span> {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> cmd.<span style="color:#c0f">NArg</span>() <span style="color:#555">!=</span> <span style="color:#f60">1</span> {
     cmd.<span style="color:#c0f">Usage</span>()
     <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">nil</span> 
-} 
-</code></pre></div>
+} </code></pre></div>
 <p>判断经过flag解析后的参数列表，若参数列表中参数的个数不为1，则说明需要pull多个image，pull命令不支持，则调用错误处理方法cmd.Usage()，并返回nil。</p>
 
 <p>(5)</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">var</span> (
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">var</span> (
     v = url.Values{} 
     remote = cmd.<span style="color:#c0f">Arg</span>(<span style="color:#f60">0</span>) 
 )
 v.<span style="color:#c0f">Set</span>(<span style="color:#c30">&#34;fromImage&#34;</span>, remote) 
 <span style="color:#069;font-weight:bold">if</span> <span style="color:#555">*</span>tag <span style="color:#555">==</span> <span style="color:#c30">&#34;&#34;</span> {
     v.<span style="color:#c0f">Set</span>(<span style="color:#c30">&#34;tag&#34;</span>, <span style="color:#555">*</span>tag) 
-} 
-</code></pre></div>
+} </code></pre></div>
 <p>创建一个map类型的变量v，该变量用于存放pull镜像时所需的url参数；随后将参数列表的第一个值赋给remote变量，并将remote作为键为fromImage的值添加至v；最后若有tag信息的话，将tag信息作为键为”tag”的值添加至v。</p>
 
 <p>(6)</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">remote, _ = parsers.<span style="color:#c0f">ParseRepositoryTag</span>(remote) 
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">remote, _ = parsers.<span style="color:#c0f">ParseRepositoryTag</span>(remote) 
 <span style="color:#09f;font-style:italic">// Resolve the Repository name from fqn to hostname + name
 </span><span style="color:#09f;font-style:italic"></span>hostname, _, err <span style="color:#555">:=</span> registry.<span style="color:#c0f">ResolveRepositoryName</span>(remote) 
 <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
     <span style="color:#069;font-weight:bold">return</span> err
-} 
-</code></pre></div>
+} </code></pre></div>
 <p>通过remote变量解析出镜像所在的host地址，以及镜像的名称。</p>
 
 <p>(7)</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">cli.<span style="color:#c0f">LoadConfigFile</span>()
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">cli.<span style="color:#c0f">LoadConfigFile</span>()
 <span style="color:#09f;font-style:italic">// Resolve the Auth config relevant for this server 
 </span><span style="color:#09f;font-style:italic"></span>authConfig <span style="color:#555">:=</span> cli.configFile.<span style="color:#c0f">ResolveAuthConfig</span>(hostname)</code></pre></div>
 <p>通过cli对象获取与Docker Server通信所需要的认证配置信息。</p>
 
 <p>(8)</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">pull <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">func</span>(authConfig registry.AuthConfig) <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">pull <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">func</span>(authConfig registry.AuthConfig) <span style="color:#078;font-weight:bold">error</span> {
     buf, err <span style="color:#555">:=</span> json.<span style="color:#c0f">Marshal</span>(authConfig) 
     <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> { 
         <span style="color:#069;font-weight:bold">return</span> err 
@@ -527,12 +522,11 @@ v.<span style="color:#c0f">Set</span>(<span style="color:#c30">&#34;fromImage&#3
     <span style="color:#069;font-weight:bold">return</span> cli.<span style="color:#c0f">stream</span>(<span style="color:#c30">&#34;POST&#34;</span>, <span style="color:#c30">&#34;/images/create?&#34;</span><span style="color:#555">+</span>v.<span style="color:#c0f">Encode</span>(), <span style="color:#069;font-weight:bold">nil</span>, cli.out, <span style="color:#069;font-weight:bold">map</span>[<span style="color:#078;font-weight:bold">string</span>][]<span style="color:#078;font-weight:bold">string</span>{
         <span style="color:#c30">&#34; X-Registry-Auth&#34;</span>: registryAuthHeader, .
         })
-    } 
-</code></pre></div>
+    } </code></pre></div>
 <p>定义一个名为pull的函数，传入的参数类型为registry.AuthConfig，返回类型为error。函数执行块中最主要的内容为：cli.stream(……)部分。该部分具体发起了一个给Docker Server的POST请求，请求的url为&rdquo;/images/create?&ldquo;+v.Encode()，请求的认证信息为：map[string][]string{&ldquo;X-Registry-Auth&rdquo;: registryAuthHeader,}。</p>
 
 <p>(9)</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> <span style="color:#c0f">pull</span>(authConfig); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> <span style="color:#c0f">pull</span>(authConfig); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
     <span style="color:#069;font-weight:bold">if</span> strings.<span style="color:#c0f">Contains</span>(err.<span style="color:#c0f">Error</span>(), <span style="color:#c30">&#34;Status 401&#34;</span>) {
         fmt.<span style="color:#c0f">Fprintln</span>(cli.out, <span style="color:#c30">&#34;\\nPlease login prior to pull:&#34;</span>)
         <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> cli.<span style="color:#c0f">CmdLogin</span>(hostname); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
@@ -542,8 +536,7 @@ v.<span style="color:#c0f">Set</span>(<span style="color:#c30">&#34;fromImage&#3
         <span style="color:#069;font-weight:bold">return</span> <span style="color:#c0f">pull</span>(authConfig) 
         }
         <span style="color:#069;font-weight:bold">return</span> err 
-} 
-</code></pre></div>
+} </code></pre></div>
 <p>由于上一个步骤只是定义pull函数，这一步骤具体调用执行pull函数，若成功则最终返回，若返回错误，则做相应的错误处理。若返回错误为401，则需要先登录，转至登录环节，完成之后，继续执行pull函数，若完成则最终返回。 以上便是pull请求的全部执行过程，其他请求的执行在流程上也是大同小异。总之，请求执行过程中，大多都是将命令行中关于请求的参数进行初步处理，并添加相应的辅助信息，最终通过指定的协议给Docker Server发送Docker Client和Docker Server约定好的API请求。</p>
 
 <h2 id="5-总结"><strong>5. 总结</strong></h2>
@@ -803,7 +796,7 @@ v.<span style="color:#c0f">Set</span>(<span style="color:#c30">&#34;fromImage&#3
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -1056,6 +1049,19 @@ v.<span style="color:#c0f">Set</span>(<span style="color:#c30">&#34;fromImage&#3
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -1077,19 +1083,6 @@ v.<span style="color:#c0f">Set</span>(<span style="color:#c30">&#34;fromImage&#3
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

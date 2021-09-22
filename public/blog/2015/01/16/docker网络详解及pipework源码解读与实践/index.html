@@ -18,7 +18,7 @@
   
   <meta name="description" content="Docker作为目前最火的轻量级容器技术，有很多令人称道的功能，如Docker的镜像管理。然而，Docker同样有着很多不完善的地方，网络方面就是Docker比较薄弱的部分。因此，我们有必要深入了解Docker的网络知识，以满足更高的网络需求。本文首先介绍了Docker自身的4种网络工作方式，然后通过3个样例 —— 将Docker容器配置到本地网络环境中、单主机Docker容器的VLAN划分、多主机Docker容器的VLAN划分，演示了如何使用pipework帮助我们进行复杂的网络设置，以及pipework是如何工作的。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -271,11 +271,11 @@
 <h4 id="1-4-2-bridge模式下容器的通信"><strong>1.4.2 bridge模式下容器的通信</strong></h4>
 
 <p>在bridge模式下，连在同一网桥上的容器可以相互通信（若出于安全考虑，也可以禁止它们之间通信，方法是在<code>DOCKER_OPTS</code>变量中设置<code>--icc=false</code>，这样只有使用<code>--link</code>才能使两个容器通信）。 容器也可以与外部通信，我们看一下主机上的Iptable规则，可以看到这么一条</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">-A POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">-A POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE</code></pre></div>
 <p>这条规则会将源地址为<code>172.17.0.0/16</code>的包（也就是从Docker容器产生的包），并且不是从<code>docker0</code>网卡发出的，进行源地址转换，转换成主机网卡的地址。这么说可能不太好理解，举一个例子说明一下。假设主机有一块网卡为<code>eth0</code>，IP地址为<code>10.10.101.105/24</code>，网关为<code>10.10.101.254</code>。从主机上一个IP为<code>172.17.0.1/16</code>的容器中<code>ping</code>百度（<code>180.76.3.151</code>）。IP包首先从容器发往自己的默认网关<code>docker0</code>，包到达<code>docker0</code>后，也就到达了主机上。然后会查询主机的路由表，发现包应该从主机的<code>eth0</code>发往主机的网关<code>10.10.105.254/24</code>。接着包会转发给<code>eth0</code>，并从<code>eth0</code>发出去（主机的<code>ip_forward</code>转发应该已经打开）。这时候，上面的Iptable规则就会起作用，对包做SNAT转换，将源地址换为<code>eth0</code>的地址。这样，在外界看来，这个包就是从<code>10.10.101.105</code>上发出来的，Docker容器对外是不可见的。 那么，外面的机器是如何访问Docker容器的服务呢？我们首先用下面命令创建一个含有web应用的容器，将容器的80端口映射到主机的80端口。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run -d --name web -p 80:80 fmzhen/simpleweb</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run -d --name web -p 80:80 fmzhen/simpleweb</code></pre></div>
 <p>然后查看Iptable规则的变化，发现多了这样一条规则：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">-A DOCKER ! -i docker0 -p tcp -m tcp --dport <span style="color:#f60">80</span> -j DNAT --to-destination 172.17.0.5:80</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">-A DOCKER ! -i docker0 -p tcp -m tcp --dport <span style="color:#f60">80</span> -j DNAT --to-destination 172.17.0.5:80</code></pre></div>
 <p>此条规则就是对主机<code>eth0</code>收到的目的端口为80的tcp流量进行DNAT转换，将流量发往<code>172.17.0.5:80</code>，也就是我们上面创建的Docker容器。所以，外界只需访问<code>10.10.101.105:80</code>就可以访问到容器中得服务。 除此之外，我们还可以自定义Docker使用的IP地址、DNS等信息，甚至使用自己定义的网桥，但是其工作方式还是一样的。</p>
 
 <h2 id="2-pipework的使用以及源码分析"><strong>2. pipework的使用以及源码分析</strong></h2>
@@ -287,16 +287,16 @@
 <p>为了使本地网络中的机器和Docker容器更方便的通信，我们经常会有将Docker容器配置到和主机同一网段的需求。这个需求其实很容易实现，我们只要将Docker容器和主机的网卡桥接起来，再给Docker容器配上IP就可以了。 下面我们来操作一下，我主机A地址为<code>10.10.101.105/24</code>,网关为<code>10.10.101.254</code>,需要给Docker容器的地址配置为<code>10.10.101.150/24</code>。 在主机A上做如下操作：</p>
 
 <p><strong>安装pipework</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">git clone https://github.com/jpetazzo/pipework
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">git clone https://github.com/jpetazzo/pipework
 cp ~/pipework/pipework /usr/local/bin/</code></pre></div>
 <p><strong>启动Docker容器</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run  </code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run  </code></pre></div>
 <p><strong>配置容器网络，并连到网桥br0上。网关在IP地址后面加@指定。</strong>
 若主机环境中存在dhcp服务器，也可以通过dhcp的方式获取IP</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">pipework br0 test1 dhcp 
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">pipework br0 test1 dhcp 
 pipework br0 test1 10.10.101.150/24@10.10.101.254</code></pre></div>
 <p><strong>将主机eth0桥接到br0上，并把eth0的IP配置在br0上。这里由于是远程操作，中间网络会断掉，所以放在一条命令中执行。</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ip addr add 10.10.101.105/24 dev br0; <span style="color:#c30;font-weight:bold">\\</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ip addr add 10.10.101.105/24 dev br0; <span style="color:#c30;font-weight:bold">\\</span>
 ip addr del 10.10.101.105/24 dev eth0; <span style="color:#c30;font-weight:bold">\\</span>
 brctl addif br0 eth0; <span style="color:#c30;font-weight:bold">\\</span>
 ip route del default; <span style="color:#c30;font-weight:bold">\\</span>
@@ -314,12 +314,12 @@ ip route add default gw 10.10.101.254 dev br0</code></pre></div>
     brctl addbr $IFNAME</p>
 
 <p><strong>创建veth pair,用于连接容器和br0</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ip link add name <span style="color:#033">$LOCAL_IFNAME</span> mtu <span style="color:#033">$MTU</span> <span style="color:#366">type</span> veth peer name <span style="color:#033">$GUEST_IFNAME</span> mtu <span style="color:#033">$MTU</span></code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ip link add name <span style="color:#033">$LOCAL_IFNAME</span> mtu <span style="color:#033">$MTU</span> <span style="color:#366">type</span> veth peer name <span style="color:#033">$GUEST_IFNAME</span> mtu <span style="color:#033">$MTU</span></code></pre></div>
 <p><strong>找到Docker容器test1在主机上的PID,创建容器网络命名空间的软连接</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#033">DOCKERPID</span><span style="color:#555">=</span><span style="color:#069;font-weight:bold">$(</span>docker inspect --format<span style="color:#555">=</span><span style="color:#c30">&#39;{{ .State.Pid }}&#39;</span> <span style="color:#033">$GUESTNAME</span><span style="color:#069;font-weight:bold">)</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#033">DOCKERPID</span><span style="color:#555">=</span><span style="color:#069;font-weight:bold">$(</span>docker inspect --format<span style="color:#555">=</span><span style="color:#c30">&#39;{{ .State.Pid }}&#39;</span> <span style="color:#033">$GUESTNAME</span><span style="color:#069;font-weight:bold">)</span>
 ln -s /proc/<span style="color:#033">$NSPID</span>/ns/net /var/run/netns/<span style="color:#033">$NSPID</span></code></pre></div>
 <p><strong>将veth pair一端放入Docker容器中，并设置正确的名字eth1</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ip link <span style="color:#366">set</span> <span style="color:#033">$GUEST_IFNAME</span> netns <span style="color:#033">$NSPID</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ip link <span style="color:#366">set</span> <span style="color:#033">$GUEST_IFNAME</span> netns <span style="color:#033">$NSPID</span>
 ip netns <span style="color:#366">exec</span> <span style="color:#033">$NSPID</span> ip link <span style="color:#366">set</span> <span style="color:#033">$GUEST_IFNAME</span> name <span style="color:#033">$CONTAINER_IFNAME</span></code></pre></div>
 <p><strong>将veth pair另一端加入网桥</strong></p>
 
@@ -327,7 +327,7 @@ ip netns <span style="color:#366">exec</span> <span style="color:#033">$NSPID</s
     brctl addif $IFNAME $LOCAL_IFNAME</p>
 
 <p><strong>为新增加的容器配置IP和路由</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ip netns <span style="color:#366">exec</span> <span style="color:#033">$NSPID</span> ip addr add <span style="color:#033">$IPADDR</span> dev <span style="color:#033">$CONTAINER_IFNAME</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ip netns <span style="color:#366">exec</span> <span style="color:#033">$NSPID</span> ip addr add <span style="color:#033">$IPADDR</span> dev <span style="color:#033">$CONTAINER_IFNAME</span>
 ip netns <span style="color:#366">exec</span> <span style="color:#033">$NSPID</span> ip link <span style="color:#366">set</span> <span style="color:#033">$CONTAINER_IFNAME</span> up
 ip netns <span style="color:#366">exec</span> <span style="color:#033">$NSPID</span> ip route delete default
 ip netns <span style="color:#366">exec</span> <span style="color:#033">$NSPID</span> ip route add <span style="color:#033">$GATEWAY</span>/32 dev <span style="color:#033">$CONTAINER_IFNAME</span></code></pre></div>
@@ -346,42 +346,42 @@ ip netns <span style="color:#366">exec</span> <span style="color:#033">$NSPID</s
 <p>pipework不仅可以使用Linux bridge连接Docker容器，还可以与OpenVswitch结合，实现Docker容器的VLAN划分。下面，就来简单演示一下，在单机环境下，如何实现Docker容器间的二层隔离。 为了演示隔离效果，我们将4个容器放在了同一个IP网段中。但实际他们是二层隔离的两个网络，有不同的广播域。</p>
 
 <p><strong>在主机A上创建4个Docker容器，test1、test2、test3、test4</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run -itd --name test1 ubuntu /bin/bash
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run -itd --name test1 ubuntu /bin/bash
 docker run -itd --name test2 ubuntu /bin/bash
 docker run -itd --name test3 ubuntu /bin/bash
 docker run -itd --name test4 ubuntu /bin/bash</code></pre></div>
 <p><strong>将test1，test2划分到一个vlan中，vlan在mac地址后加@指定，此处mac地址省略。</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">pipework ovs0 test1 192.168.0.1/24 @100
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">pipework ovs0 test1 192.168.0.1/24 @100
 pipework ovs0 test2 192.168.0.2/24 @100</code></pre></div>
 <p><strong>将test3，test4划分到另一个vlan中</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">pipework ovs0 test3 192.168.0.3/24 @200
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">pipework ovs0 test3 192.168.0.3/24 @200
 pipework ovs0 test4 192.168.0.4/24 @200</code></pre></div>
 <p>完成上述操作后，使用<code>docker attach</code>连到容器中，然后用<code>ping</code>命令测试连通性，发现test1和test2可以相互通信，但与test3和test4隔离。这样，一个简单的VLAN隔离容器网络就已经完成。 由于OpenVswitch本身支持VLAN功能，所以这里pipework所做的工作和之前介绍的基本一样，只不过将Linux bridge替换成了OpenVswitch，在将veth pair的一端加入<code>ovs0</code>网桥时，指定了tag。底层操作如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ovs-vsctl add-port ovs0 veth*  <span style="color:#033">tag</span><span style="color:#555">=</span><span style="color:#f60">100</span></code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ovs-vsctl add-port ovs0 veth*  <span style="color:#033">tag</span><span style="color:#555">=</span><span style="color:#f60">100</span></code></pre></div>
 <h3 id="2-3-多主机docker容器的vlan划分">2.3 多主机Docker容器的VLAN划分</h3>
 
 <p>上面介绍完了单主机上VLAN的隔离，下面我们将情况延伸到多主机的情况。有了前面两个例子做铺垫，这个也就不难了。为了实现这个目的，我们把宿主机上的网卡桥接到各自的OVS网桥上，然后再为容器配置IP和VLAN就可以了。我们实验环境如下，主机A和B各有一块网卡<code>eth0</code>，IP地址分别为<code>10.10.101.105/24</code>、<code>10.10.101.106/24</code>。在主机A上创建两个容器test1、test2，分别在VLAN 100和VLAN 200上。在主机B上创建test3、test4，分别在VLAN 100和VLAN 200 上。最终，test1可以和test3通信，test2可以和test4通信。</p>
 
 <p><strong>在主机A上创建Docker容器</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run -itd --name test1 ubuntu /bin/bash
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run -itd --name test1 ubuntu /bin/bash
 docker run -itd --name test2 ubuntu /bin/bash</code></pre></div>
 <p><strong>划分VLAN</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">pipework ovs0 test1 192.168.0.1/24 @100
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">pipework ovs0 test1 192.168.0.1/24 @100
 pipework ovs0 test2 192.168.0.2/24 @200</code></pre></div>
 <p><strong>将eth0桥接到ovs0上</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ip addr add 10.10.101.105/24 dev ovs0; <span style="color:#c30;font-weight:bold">\\</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ip addr add 10.10.101.105/24 dev ovs0; <span style="color:#c30;font-weight:bold">\\</span>
 ip addr del 10.10.101.105/24 dev eth0; <span style="color:#c30;font-weight:bold">\\</span>
 ovs-vsctl add-port ovs0 eth0; <span style="color:#c30;font-weight:bold">\\</span>
 ip route del default; <span style="color:#c30;font-weight:bold">\\</span>
 ip route add default gw 10.10.101.254 dev ovs0</code></pre></div>
 <p><strong>在主机B上创建Docker容器</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run -itd --name test3 ubuntu /bin/bash
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run -itd --name test3 ubuntu /bin/bash
 docker run -itd --name test4 ubuntu /bin/bash</code></pre></div>
 <p><strong>划分VLAN</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">pipework ovs0 test3 192.168.0.3/24 @100
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">pipework ovs0 test3 192.168.0.3/24 @100
 pipework ovs0 test4 192.168.0.4/24 @200</code></pre></div>
 <p><strong>将eth0桥接到ovs0上</strong></p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ip addr add 10.10.101.106/24 dev ovs0; <span style="color:#c30;font-weight:bold">\\</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ip addr add 10.10.101.106/24 dev ovs0; <span style="color:#c30;font-weight:bold">\\</span>
 ip addr del 10.10.101.106/24 dev eth0; <span style="color:#c30;font-weight:bold">\\</span>
 ovs-vsctl add-port ovs0 eth0; <span style="color:#c30;font-weight:bold">\\</span>
 ip route del default; <span style="color:#c30;font-weight:bold">\\</span>
@@ -641,7 +641,7 @@ ip route add default gw 10.10.101.254 dev ovs0</code></pre></div>
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -894,6 +894,19 @@ ip route add default gw 10.10.101.254 dev ovs0</code></pre></div>
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -915,19 +928,6 @@ ip route add default gw 10.10.101.254 dev ovs0</code></pre></div>
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

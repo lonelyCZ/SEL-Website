@@ -18,7 +18,7 @@
   
   <meta name="description" content="kubeedge是华为在KubeCon CloudNativeCon China 2018上发布的面向边缘环境容器管理平台。kubeedge能够接入云端Kubernetes集群，使得边缘端应用的管理可以跟云端应用的管理一样，采用广为熟知的Kubernetes API。SEL实验室准备用一系列文章分析kubeedge的总体架构和各个模块的内部实现机制，本文为系列文章的第一篇，分析kubeedge的版本为1.1后的commit 31e562bc。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -266,7 +266,7 @@
 <h2 id="模块的定义与分组">模块的定义与分组</h2>
 
 <p>kubeedge中的模块实现beehive中的模块定义</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">//beehive/pkg/core/module.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">//beehive/pkg/core/module.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">type</span> Module <span style="color:#069;font-weight:bold">interface</span> {
     <span style="color:#c0f">Name</span>() <span style="color:#078;font-weight:bold">string</span>
     <span style="color:#c0f">Group</span>() <span style="color:#078;font-weight:bold">string</span>
@@ -310,18 +310,18 @@
 <p>通讯方式包括“单播”和“组播”两种方式，即可以将消息单独发给某个模块，也可以把消息发给模块组（即前面说的<code>edged</code>、<code>hub</code>、<code>bus</code>等组）。</p>
 
 <p>beehive采用context管理分组与模块间通讯，当使用channel为通讯方式时，<code>ChannelContext</code>实现了与context相关的两个接口： <code>ModuleContext</code>和<code>MessageContext</code>。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// beehive/pkg/core/context/context_channel.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// beehive/pkg/core/context/context_channel.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">type</span> ModuleContext <span style="color:#069;font-weight:bold">interface</span> {
     <span style="color:#c0f">AddModule</span>(module <span style="color:#078;font-weight:bold">string</span>)
     <span style="color:#c0f">AddModuleGroup</span>(module, group <span style="color:#078;font-weight:bold">string</span>)
     <span style="color:#c0f">Cleanup</span>(module <span style="color:#078;font-weight:bold">string</span>)
 }</code></pre></div>
 <p><code>ChannelContext</code>对<code>ModuleContext</code>的实现中，<code>AddModule</code>为一个模块创建默认buffer大小为1024的channel，在自己的<code>channels</code>成员中将模块名字映射到该channel，用于“单播”。<code>AddModuleGroup</code>将一个模块对应的channel添加到所属group内，也就是将<code>ChannelContext</code>的<code>typeChannels[group][module]</code>设置为模块对应channel，用于“组播”。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// beehive/pkg/core/context/context_channel.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// beehive/pkg/core/context/context_channel.go
 </span><span style="color:#09f;font-style:italic"></span>channels     <span style="color:#069;font-weight:bold">map</span>[<span style="color:#078;font-weight:bold">string</span>]<span style="color:#069;font-weight:bold">chan</span> model.Message
 typeChannels <span style="color:#069;font-weight:bold">map</span>[<span style="color:#078;font-weight:bold">string</span>]<span style="color:#069;font-weight:bold">map</span>[<span style="color:#078;font-weight:bold">string</span>]<span style="color:#069;font-weight:bold">chan</span> model.Message</code></pre></div>
 <p><code>ChannelContext</code>在<code>MessageChannel</code>接口的实现中，实现了模块间消息的同步与异步发送，单播组播等。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// beehive/pkg/core/context/context_channel.go
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// beehive/pkg/core/context/context_channel.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">type</span> MessageContext <span style="color:#069;font-weight:bold">interface</span> {
     <span style="color:#09f;font-style:italic">// async mode
 </span><span style="color:#09f;font-style:italic"></span>    <span style="color:#c0f">Send</span>(module <span style="color:#078;font-weight:bold">string</span>, message model.Message)
@@ -578,7 +578,7 @@ typeChannels <span style="color:#069;font-weight:bold">map</span>[<span style="c
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -831,6 +831,19 @@ typeChannels <span style="color:#069;font-weight:bold">map</span>[<span style="c
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -852,19 +865,6 @@ typeChannels <span style="color:#069;font-weight:bold">map</span>[<span style="c
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

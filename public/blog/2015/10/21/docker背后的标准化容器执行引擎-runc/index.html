@@ -18,7 +18,7 @@
   
   <meta name="description" content="本文从OCI组织的成立开始讲起，描述了开放容器格式的标准及其宗旨，这其实就是runC的由来。继而针对具体的runC特性及其启动进行了详细介绍。OCI的成立表明了社区及各大厂商对容器技术的肯定以及加快容器技术发展进步的强烈决心，相信在不久的将来，符合OCI标准的开放容器项目会越来越多，容器技术将更加欣欣向荣地不断前进。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -332,148 +332,148 @@
 <p>最后执行 <code>runc start</code> 你就启动了一个容器了。</p>
 
 <p>可以看到，我们对容器的所有定义，均包含在两份配置文件中，一份简略的<code>config.json</code>配置文件类似如下，已用省略号省去部分信息，完整的可以查看<a href="https://github.com/opencontainers/runc#oci-container-json-format">官方github</a>。</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">{<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">&#34;version&#34;: </span><span style="color:#c30">&#34;0.1.0&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">&#34;platform&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;os&#34;: </span><span style="color:#c30">&#34;linux&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;arch&#34;: </span><span style="color:#c30">&#34;amd64&#34;</span><span style="color:#bbb">
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">{<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">&#34;version&#34;: </span><span style="color:#c30">&#34;0.1.0&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">&#34;platform&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;os&#34;: </span><span style="color:#c30">&#34;linux&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;arch&#34;: </span><span style="color:#c30">&#34;amd64&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">  </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">&#34;process&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;terminal&#34;: </span><span style="color:#069;font-weight:bold">true</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;user&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;uid&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;gid&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;additionalGids&#34;: </span><span style="color:#069;font-weight:bold">null</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">&#34;process&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;terminal&#34;: </span><span style="color:#069;font-weight:bold">true</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;user&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;uid&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;gid&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;additionalGids&#34;: </span><span style="color:#069;font-weight:bold">null</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;args&#34;: </span>[<span style="color:#c30">&#34;sh&#34;</span>],<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;env&#34;: </span>[<span style="color:#c30">&#34;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;TERM=xterm&#34;</span>],<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;cwd&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;args&#34;: </span>[<span style="color:#c30">&#34;sh&#34;</span>],<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;env&#34;: </span>[<span style="color:#c30">&#34;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;TERM=xterm&#34;</span>],<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;cwd&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">  </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">&#34;root&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;rootfs&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;readonly&#34;: </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">&#34;root&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;rootfs&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;readonly&#34;: </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
 </span><span style="color:#bbb">  </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">&#34;hostname&#34;: </span><span style="color:#c30">&#34;shell&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">&#34;mounts&#34;: </span>[{<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;proc&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;/proc&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">&#34;hostname&#34;: </span><span style="color:#c30">&#34;shell&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">&#34;mounts&#34;: </span>[{<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;proc&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;/proc&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">  </span>},<span style="color:#bbb"> 
-</span><span style="color:#bbb">  </span>…… <span style="color:#bbb">
+</span><span style="color:#bbb">  </span>……<span style="color:#bbb"> 
 </span><span style="color:#bbb">  </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;cgroup&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;/sys/fs/cgroup&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;name&#34;: </span><span style="color:#c30">&#34;cgroup&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;/sys/fs/cgroup&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">  </span>}],<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">&#34;linux&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;capabilities&#34;: </span>[<span style="color:#c30">&#34;CAP_AUDIT_WRITE&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;CAP_KILL&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;CAP_NET_BIND_SERVICE&#34;</span>]<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">&#34;linux&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;capabilities&#34;: </span>[<span style="color:#c30">&#34;CAP_AUDIT_WRITE&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;CAP_KILL&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;CAP_NET_BIND_SERVICE&#34;</span>]<span style="color:#bbb">
 </span><span style="color:#bbb">  </span>}<span style="color:#bbb">
 </span><span style="color:#bbb"></span>}</code></pre></div>
 <p>各部分表示的意思在1.2节中已经讲解，针对具体的内容我们可以看到，版本是0.10，该配置文件针对的是AMD64架构下的Linux系统，启动容器后执行的命令就是<code>sh</code>，配置的环境变量有两个，是<code>PATH</code>和<code>TERM</code>，启动后user的uid和gid都为0，表示进入后是root用户。<code>cwd</code>项为空表示工作目录为当前目录。capabilities能力方面则使用白名单的形式，从配置上可以看到只允许三个能力，功能分别为允许写入审计日志、允许发送信号、允许绑定socket到网络端口。 一份简略的<code>runtime.json</code>配置则如下，同样用省略号省去了部分内容：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">{<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">&#34;mounts&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;proc&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;proc&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;source&#34;: </span><span style="color:#c30">&#34;proc&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;options&#34;: </span><span style="color:#069;font-weight:bold">null</span><span style="color:#bbb">
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">{<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">&#34;mounts&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;proc&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;proc&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;source&#34;: </span><span style="color:#c30">&#34;proc&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;options&#34;: </span><span style="color:#069;font-weight:bold">null</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span>},<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>……<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;cgroup&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;cgroup&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;source&#34;: </span><span style="color:#c30">&#34;cgroup&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;options&#34;: </span>[<span style="color:#c30">&#34;nosuid&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;noexec&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;nodev&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;relatime&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;ro&#34;</span>]<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;cgroup&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;cgroup&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;source&#34;: </span><span style="color:#c30">&#34;cgroup&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;options&#34;: </span>[<span style="color:#c30">&#34;nosuid&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;noexec&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;nodev&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;relatime&#34;</span>,<span style="color:#bbb"> </span><span style="color:#c30">&#34;ro&#34;</span>]<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>}<span style="color:#bbb">
 </span><span style="color:#bbb">  </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">&#34;hooks&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;prestart&#34;: </span><span style="color:#069;font-weight:bold">null</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;poststop&#34;: </span><span style="color:#069;font-weight:bold">null</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">&#34;hooks&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;prestart&#34;: </span><span style="color:#069;font-weight:bold">null</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;poststop&#34;: </span><span style="color:#069;font-weight:bold">null</span><span style="color:#bbb">
 </span><span style="color:#bbb">  </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">&#34;linux&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;uidMappings&#34;: </span><span style="color:#069;font-weight:bold">null</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;gidMappings&#34;: </span><span style="color:#069;font-weight:bold">null</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;rlimits&#34;: </span>[{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;RLIMIT_NOFILE&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;hard&#34;: </span><span style="color:#f60">1024</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;soft&#34;: </span><span style="color:#f60">1024</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">&#34;linux&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;uidMappings&#34;: </span><span style="color:#069;font-weight:bold">null</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;gidMappings&#34;: </span><span style="color:#069;font-weight:bold">null</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;rlimits&#34;: </span>[{<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;RLIMIT_NOFILE&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;hard&#34;: </span><span style="color:#f60">1024</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;soft&#34;: </span><span style="color:#f60">1024</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span>}],<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;sysctl&#34;: </span><span style="color:#069;font-weight:bold">null</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;resources&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;disableOOMKiller&#34;: </span><span style="color:#069;font-weight:bold">false</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;memory&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;limit&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;reservation&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;swap&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;kernel&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;swappiness&#34;: </span>-<span style="color:#f60">1</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;sysctl&#34;: </span><span style="color:#069;font-weight:bold">null</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;resources&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;disableOOMKiller&#34;: </span><span style="color:#069;font-weight:bold">false</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;memory&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;limit&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;reservation&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;swap&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;kernel&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;swappiness&#34;: </span>-<span style="color:#f60">1</span><span style="color:#bbb">
 </span><span style="color:#bbb">      </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;cpu&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;shares&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;quota&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;period&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;realtimeRuntime&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;realtimePeriod&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;cpus&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;mems&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;cpu&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;shares&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;quota&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;period&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;realtimeRuntime&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;realtimePeriod&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;cpus&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;mems&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">      </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;pids&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;limit&#34;: </span><span style="color:#f60">0</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;pids&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;limit&#34;: </span><span style="color:#f60">0</span><span style="color:#bbb">
 </span><span style="color:#bbb">      </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;blockIO&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;blkioWeight&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;blkioWeightDevice&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;blkioThrottleReadBpsDevice&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;blkioThrottleWriteBpsDevice&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;blkioThrottleReadIopsDevice&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;blkioThrottleWriteIopsDevice&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;blockIO&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;blkioWeight&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;blkioWeightDevice&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;blkioThrottleReadBpsDevice&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;blkioThrottleWriteBpsDevice&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;blkioThrottleReadIopsDevice&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;blkioThrottleWriteIopsDevice&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">      </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;hugepageLimits&#34;: </span><span style="color:#069;font-weight:bold">null</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;network&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;classId&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">&#34;priorities&#34;: </span><span style="color:#069;font-weight:bold">null</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;hugepageLimits&#34;: </span><span style="color:#069;font-weight:bold">null</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;network&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;classId&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">&#34;priorities&#34;: </span><span style="color:#069;font-weight:bold">null</span><span style="color:#bbb">
 </span><span style="color:#bbb">      </span>}<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;cgroupsPath&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;namespaces&#34;: </span>[{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;pid&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;cgroupsPath&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;namespaces&#34;: </span>[{<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;pid&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span>},<span style="color:#bbb"> </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;network&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;network&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span>},<span style="color:#bbb"> </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;ipc&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;ipc&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span>},<span style="color:#bbb"> </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;uts&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;uts&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span>},<span style="color:#bbb"> </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;mount&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;type&#34;: </span><span style="color:#c30">&#34;mount&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span>}],<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;devices&#34;: </span>[{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;/dev/null&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;type&#34;: </span><span style="color:#f60">99</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;major&#34;: </span><span style="color:#f60">1</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;minor&#34;: </span><span style="color:#f60">3</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;permissions&#34;: </span><span style="color:#c30">&#34;rwm&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;fileMode&#34;: </span><span style="color:#f60">438</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;uid&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;gid&#34;: </span><span style="color:#f60">0</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span>},<span style="color:#bbb"> </span>…… <span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;devices&#34;: </span>[{<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;/dev/null&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;type&#34;: </span><span style="color:#f60">99</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;major&#34;: </span><span style="color:#f60">1</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;minor&#34;: </span><span style="color:#f60">3</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;permissions&#34;: </span><span style="color:#c30">&#34;rwm&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;fileMode&#34;: </span><span style="color:#f60">438</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;uid&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;gid&#34;: </span><span style="color:#f60">0</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span>},<span style="color:#bbb"> </span>……<span style="color:#bbb"> 
 </span><span style="color:#bbb">    </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;/dev/urandom&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;type&#34;: </span><span style="color:#f60">99</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;major&#34;: </span><span style="color:#f60">1</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;minor&#34;: </span><span style="color:#f60">9</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;permissions&#34;: </span><span style="color:#c30">&#34;rwm&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;fileMode&#34;: </span><span style="color:#f60">438</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;uid&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;gid&#34;: </span><span style="color:#f60">0</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;path&#34;: </span><span style="color:#c30">&#34;/dev/urandom&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;type&#34;: </span><span style="color:#f60">99</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;major&#34;: </span><span style="color:#f60">1</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;minor&#34;: </span><span style="color:#f60">9</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;permissions&#34;: </span><span style="color:#c30">&#34;rwm&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;fileMode&#34;: </span><span style="color:#f60">438</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;uid&#34;: </span><span style="color:#f60">0</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;gid&#34;: </span><span style="color:#f60">0</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span>}],<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;apparmorProfile&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;selinuxProcessLabel&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;seccomp&#34;: </span>{<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;defaultAction&#34;: </span><span style="color:#c30">&#34;SCMP_ACT_ALLOW&#34;</span>,<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">&#34;syscalls&#34;: </span>[]<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;apparmorProfile&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;selinuxProcessLabel&#34;: </span><span style="color:#c30">&#34;&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;seccomp&#34;: </span>{<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;defaultAction&#34;: </span><span style="color:#c30">&#34;SCMP_ACT_ALLOW&#34;</span>,<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">&#34;syscalls&#34;: </span>[]<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>},<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">&#34;rootfsPropagation&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">&#34;rootfsPropagation&#34;: </span><span style="color:#c30">&#34;&#34;</span><span style="color:#bbb">
 </span><span style="color:#bbb">  </span>}<span style="color:#bbb">
 </span><span style="color:#bbb"></span>}</code></pre></div>
 <p>可以看到基本的几项配置分别为挂载点信息、启动前与停止后hooks脚本、然后就是针对Linux的特性支持的诸如用户uid/gid绑定，rlimit配置、namespace设置、cgroups资源限额、设备权限配置、apparmor配置项目录、selinux标记以及seccomp配置。其中，<a href="http://www.infoq.com/cn/articles/docker-kernel-knowledge-namespace-resource-isolation">namespaces</a>和<a href="http://www.infoq.com/cn/articles/docker-kernel-knowledge-cgroups-resource-isolation">cgroups</a>笔者均有写文章详细介绍过。</p>
@@ -740,7 +740,7 @@
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -993,6 +993,19 @@
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -1014,19 +1027,6 @@
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

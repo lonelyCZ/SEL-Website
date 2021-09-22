@@ -18,7 +18,7 @@
   
   <meta name="description" content="本文从引入CRI的缘由而起，简要描述了CRI的架构，重点叙述了PouchContainer对CRI各个核心功能模块的实现。CRI的存在让PouchContainer容器加入Kubernetes生态变得更为简单快捷。而我们也相信，PouchContainer独有的特性必定会让Kubernetes生态变得更加丰富多彩。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -276,7 +276,7 @@
 <p>因为Pod中所有的容器都是共享Network Namespace的，因此我们只需要在创建infra container的时候，对它的Network Namespace进行配置即可。</p>
 
 <p>在Kubernetes生态体系中容器的网络功能都是由CNI实现的。和CRI类似，CNI也是一套标准接口，各种网络方案只要实现了该接口就能无缝接入Kubernetes。CRI Manager中的CNI Manager就是对CNI的简单封装。它在初始化的过程中会加载目录<code>/etc/cni/net.d</code>下的配置文件，如下所示：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cat &gt;/etc/cni/net.d/10-mynet.conflist <span style="color:#c30">&lt;&lt;EOF
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cat &gt;/etc/cni/net.d/10-mynet.conflist <span style="color:#c30">&lt;&lt;EOF
 </span><span style="color:#c30">{
 </span><span style="color:#c30">        &#34;cniVersion&#34;: &#34;0.3.0&#34;,
 </span><span style="color:#c30">        &#34;name&#34;: &#34;mynet&#34;,
@@ -314,7 +314,7 @@
 <h3 id="6-io流处理">6. IO流处理</h3>
 
 <p>Kubernetes提供了例如<code>kubectl exec/attach/port-forward</code>这样的功能来实现用户和某个具体的Pod或者容器的直接交互。如下所示：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">aster $ kubectl <span style="color:#366">exec</span> -it shell-demo -- /bin/bash
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">aster $ kubectl <span style="color:#366">exec</span> -it shell-demo -- /bin/bash
 root@shell-demo:/# ls
 bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
 boot  etc  lib   media  opt  root  sbin  sys  usr
@@ -328,7 +328,7 @@ root@shell-demo:/#</code></pre></div>
 
 <ol>
 <li><p><code>kubectl exec</code>命令的本质其实是对Kubernetes集群中某个容器执行exec命令，并将由此产生的IO流转发到用户的手中。所以请求将首先层层转发到达该容器所在节点的Kubelet，Kubelet再根据配置调用CRI中的<code>Exec</code>接口。请求的配置参数如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> ExecRequest <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> ExecRequest <span style="color:#069;font-weight:bold">struct</span> {
 ContainerId <span style="color:#078;font-weight:bold">string</span>  <span style="color:#09f;font-style:italic">// 执行exec的目标容器
 </span><span style="color:#09f;font-style:italic"></span>Cmd []<span style="color:#078;font-weight:bold">string</span>    <span style="color:#09f;font-style:italic">// 具体执行的exec命令
 </span><span style="color:#09f;font-style:italic"></span>Tty <span style="color:#078;font-weight:bold">bool</span>    <span style="color:#09f;font-style:italic">// 是否在一个TTY中执行exec命令
@@ -608,7 +608,7 @@ ContainerId <span style="color:#078;font-weight:bold">string</span>  <span style
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -861,6 +861,19 @@ ContainerId <span style="color:#078;font-weight:bold">string</span>  <span style
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -882,19 +895,6 @@ ContainerId <span style="color:#078;font-weight:bold">string</span>  <span style
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 

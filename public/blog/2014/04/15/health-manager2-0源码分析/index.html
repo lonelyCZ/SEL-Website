@@ -18,7 +18,7 @@
   
   <meta name="description" content="在Cloud Foundry v2版本中，Health_Manager_next已经替代v1版本中的Health_Manager。笔者写这篇文档之前，在Github上，Health_Manager_next作为一个单独的项目，存在于Cloud Foundry之下；然而在笔者写这篇文档的时候，Health_Manager_next项目在Cloud Foundry下已经不复存在，然而进入原先的Health_Manager项目，可以发现，Health_Manager项目的项目说明已经成为HealthManager 2.0，因此可见之前的Health_Manager_next项目，也就是HealthManager 2.0如今改名为Health_Manager项目，并覆盖Cloud Foundry v1版本的Health_Manager项目。下文对于该部分的称呼全部使用Health_Manager，而非之前的Health_Manager_next。">
 
-  <meta name="generator" content="Hugo 0.88.1" />
+  <meta name="generator" content="Hugo 0.68.3" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -235,7 +235,7 @@
 <p>Health_Manager组件与DEA组件的通信，通过Cloud Foundry的消息中间件NATS来实现，实现方式为“订阅/发布消息”。由于Health_Manager只从DEA组件获取信息，而DEA不会向Health_Manager组件获取信息，因此在实现过程中，Health_Manager都是订阅了若干主题的消息，通过DEA发布相应主题的消息来实现信息的获取。</p>
 
 <p>Health_Manager组件对DEA组件的接口代码实现，主要在/health_manager/lib/health_manager/actual_state.rb中的start方法中：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start</span>
   logger<span style="color:#555">.</span>info <span style="color:#c30">&#34;hm.actual-state.subscribing&#34;</span>
   @message_bus<span style="color:#555">.</span>subscribe(<span style="color:#c30">&#39;dea.heartbeat&#39;</span>) <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>message<span style="color:#555">|</span>
     process_heartbeat(message)
@@ -294,7 +294,7 @@
 <h2 id="3-1-manager模块源码实现"><strong>3.1. Manager模块源码实现</strong></h2>
 
 <p>Manager是整个Health_Manager的运行入口，同时也负责其他模块的初始化以及运行。 首先来看Manager模块的start方法实现，如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start</span>
   logger<span style="color:#555">.</span>info(<span style="color:#c30">&#34;starting...&#34;</span>)
   <span style="color:#360">EM</span><span style="color:#555">.</span>epoll
   <span style="color:#360">EM</span><span style="color:#555">.</span>run <span style="color:#069;font-weight:bold">do</span>
@@ -308,7 +308,7 @@
   <span style="color:#069;font-weight:bold">end</span>
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>在该方法中，通过运行EventMachine来实现，创建与消息中间件NATS的连接，以及通过该连接对象实现其他模块的设置与创建，随后又对这些模块发起运行命令。以下着重进入setup_component方法：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">setup_components</span>(message_bus)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">setup_components</span>(message_bus)
   <span style="color:#069;font-weight:bold">if</span> <span style="color:#360">HealthManager</span><span style="color:#555">::</span><span style="color:#360">Config</span><span style="color:#555">.</span>black_box_test_mode?
     @scheduler <span style="color:#555">=</span> <span style="color:#360">FakeScheduler</span><span style="color:#555">.</span>new(message_bus)
     @@scheduler <span style="color:#555">=</span> @scheduler
@@ -325,7 +325,7 @@
 <p>在该方法中，Manager模块创建了多个其他模块，比如droplet_registry，actual_state，desired_state，nudger，harmonizer，reporter等。</p>
 
 <p>在Manager的start方法中，调用了setup_component方法之后，又调用了多个模块的运行方法，使得这些模块真正运行起来，如：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    @reporter<span style="color:#555">.</span>prepare
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    @reporter<span style="color:#555">.</span>prepare
     @harmonizer<span style="color:#555">.</span>prepare
     @actual_state<span style="color:#555">.</span>start
     register_as_vcap_component(message_bus)
@@ -337,9 +337,9 @@
 <p>ActualState模块的功能上文已经讲述，现在进入该模块的代码实现。</p>
 
 <p>ActualState的创建由Manager模块的setup_component方法来实现：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    @actual_state <span style="color:#555">=</span> <span style="color:#360">ActualState</span><span style="color:#555">.</span>new(@varz, @droplet_registry, message_bus)</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    @actual_state <span style="color:#555">=</span> <span style="color:#360">ActualState</span><span style="color:#555">.</span>new(@varz, @droplet_registry, message_bus)</code></pre></div>
 <p>而该@actual_state对象的运行在Manager的start方法中：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start</span>
   logger<span style="color:#555">.</span>info(<span style="color:#c30">&#34;starting...&#34;</span>)
 
   <span style="color:#360">EM</span><span style="color:#555">.</span>epoll
@@ -356,7 +356,7 @@
   <span style="color:#069;font-weight:bold">end</span>
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>首先进入该模块的订阅消息部分：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">start</span>
   logger<span style="color:#555">.</span>info <span style="color:#c30">&#34;hm.actual-state.subscribing&#34;</span>
   @message_bus<span style="color:#555">.</span>subscribe(<span style="color:#c30">&#39;dea.heartbeat&#39;</span>) <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>message<span style="color:#555">|</span>
     process_heartbeat(message)
@@ -372,7 +372,7 @@
 <p>深入了解这部分的代码之后，可以发现，ActualState信息的获取，就是通过订阅这三个主题的消息得到的。’dea.heartbeat’代表DEA发送给Health_Manager的心跳信息的主题；’droplet.exit’代表DEA中有应用退出时发送给Health_Manager关于应用的退出消息的主题；’droplet.update’代表当应用有信息被更新的主题。</p>
 
 <p>首先进入process_heartbeat方法中，当有DEA组件发布’dea.heartbeat’消息时，ActualState模块随即获取消息的message，对其执行process_heartbeat方法，方法实现如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process_heartbeat</span>(message)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process_heartbeat</span>(message)
   logger<span style="color:#555">.</span>debug <span style="color:#c30">&#34;hm.actual-state.process-heartbeat&#34;</span>,
                <span style="color:#fc3">:dea</span> <span style="color:#555">=&gt;</span> message<span style="color:#555">.</span>fetch(<span style="color:#fc3">:dea</span>)
   varz<span style="color:#555">[</span><span style="color:#fc3">:heartbeat_msgs_received</span><span style="color:#555">]</span> <span style="color:#555">+=</span> <span style="color:#f60">1</span>
@@ -385,7 +385,7 @@
 <p>首先ActualState将message中的droplets信息全部取出，针对每一个droplet的心跳信息，通过 droplet = get_droplet(beat) ，将droplet信息保存。随后对于该droplet对象执行process_heartbeat方法，实现对droplet对象的简单处理，包括处理得到该对象的extra_instance对象，最后通过harmonizer来实现对应用多余的instance删除的操作。</p>
 
 <p>以下进入process_droplet_exit方法，可以知道该方法是在有应用需要退出的时候被调用，现在进入源码分析：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process_droplet_exited</span>(message)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process_droplet_exited</span>(message)
   logger<span style="color:#555">.</span>debug <span style="color:#c30">&#34;hm.actual-state.process-droplet-exited&#34;</span>,
                <span style="color:#fc3">:message</span> <span style="color:#555">=&gt;</span> message
   varz<span style="color:#555">[</span><span style="color:#fc3">:droplet_exited_msgs_received</span><span style="color:#555">]</span> <span style="color:#555">+=</span> <span style="color:#f60">1</span>
@@ -413,7 +413,7 @@
 <p>当应用实例退出的原因为STOPPED的话，也就是说应用实例有可能被用户主动叫停，那么首先先将这些应用实例的状态在分片中设置，然后再通过harmonizer对该应用执行应用实例被停止的操作。</p>
 
 <p>以下进入process_droplet_updated方法，可以知道该方法是在有应用实例被更新的时候被调用，现在进入源码分析：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process_droplet_updated</span>(message)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process_droplet_updated</span>(message)
   logger<span style="color:#555">.</span>debug <span style="color:#c30">&#34;hm.actual-state.process-droplet-updated&#34;</span>,
                <span style="color:#fc3">:droplet</span> <span style="color:#555">=&gt;</span> message<span style="color:#555">.</span>fetch(<span style="color:#fc3">:droplet</span>)
   varz<span style="color:#555">[</span><span style="color:#fc3">:droplet_updated_msgs_received</span><span style="color:#555">]</span> <span style="color:#555">+=</span> <span style="color:#f60">1</span>
@@ -428,15 +428,15 @@
 <p>DesiredState模块最主要的功能是，从Cloud Controller获取应用所预期的运行状态，该部分信息为CCDB的一个副本。DesiredState通过BULK API向Cloud Controller发送HTTP请求。</p>
 
 <p>DesireState的创建由Manager模块的setup_component方法来实现：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    @desired_state <span style="color:#555">=</span> <span style="color:#360">DesiredState</span><span style="color:#555">.</span>new(@varz, @droplet_registry, message_bus)</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    @desired_state <span style="color:#555">=</span> <span style="color:#360">DesiredState</span><span style="color:#555">.</span>new(@varz, @droplet_registry, message_bus)</code></pre></div>
 <p>而该@desired_state对象的运行在@harmonizer中，因为在创建@harmonizer对象时，Manager将很多对象都进行传递，如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    @harmonizer <span style="color:#555">=</span> <span style="color:#360">Harmonizer</span><span style="color:#555">.</span>new(@varz, @nudger, @scheduler, @actual_state, @desired_state, @droplet_registry)</code></pre></div>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    @harmonizer <span style="color:#555">=</span> <span style="color:#360">Harmonizer</span><span style="color:#555">.</span>new(@varz, @nudger, @scheduler, @actual_state, @desired_state, @droplet_registry)</code></pre></div>
 <p>而在@harmonizer的运行过程中，对DesiredState对象进行周期性调度，于lib/health_manager/harmonizer.rb，如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    scheduler<span style="color:#555">.</span>at_interval <span style="color:#fc3">:desired_state_update</span> <span style="color:#069;font-weight:bold">do</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    scheduler<span style="color:#555">.</span>at_interval <span style="color:#fc3">:desired_state_update</span> <span style="color:#069;font-weight:bold">do</span>
     update_desired_state
   <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>而update_desired_state方法实现为：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">update_desired_state</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">update_desired_state</span>
   desired_state<span style="color:#555">.</span>update_user_counts
   varz<span style="color:#555">.</span>reset_desired!
   desired_state<span style="color:#555">.</span>update
@@ -444,11 +444,11 @@
 <p>进入DesiredState模块，即lib/health_manager/desired_state.rb中，首先来到update_user_counts方法。在该方法中，DesiredState先调用with_credentials方法通过Cloud Controller的BULK API向Cloud Controller获取关于用户的credentials信息；随后通过这些credentials信息再次构建HTTP请求，再向Cloud Controller发送，获取用户数。</p>
 
 <p>在desired_state.update实现中，调用process_next_batch方法，于lib/health_manager/desired_state.rb，如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">update</span>(<span style="color:#555">&amp;</span>block)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">update</span>(<span style="color:#555">&amp;</span>block)
   process_next_batch({}, <span style="color:#360">Time</span><span style="color:#555">.</span>now, <span style="color:#555">&amp;</span>block)
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>而process_next_batch方法的实现如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process_next_batch</span>(bulk_token, start_time, <span style="color:#555">&amp;</span>block)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process_next_batch</span>(bulk_token, start_time, <span style="color:#555">&amp;</span>block)
   with_credentials <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>user, password<span style="color:#555">|</span>
     options <span style="color:#555">=</span> {
       <span style="color:#fc3">:head</span> <span style="color:#555">=&gt;</span> { <span style="color:#c30">&#39;authorization&#39;</span> <span style="color:#555">=&gt;</span> <span style="color:#555">[</span>user, password<span style="color:#555">]</span> },
@@ -472,7 +472,7 @@
   <span style="color:#069;font-weight:bold">end</span>
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>实现过程如下：首先通过with_credentials方法获取user和password，然后通过这些credentials构建HTTP请求的body信息，最后通过Health_Manager的配置，来向Cloud Controller发送相应的HTTP请求，最终获取应用的预期运行状态，在process_response_and_get_next_bulk_token方法中实现，如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process_response_and_get_next_bulk_token</span>(status, raw_response, start_time, <span style="color:#555">&amp;</span>block)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process_response_and_get_next_bulk_token</span>(status, raw_response, start_time, <span style="color:#555">&amp;</span>block)
    <span style="color:#a00;background-color:#faa">………………</span>
   batch<span style="color:#555">.</span>each <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>app_id, droplet<span style="color:#555">|</span>
     update_desired_stats_for_droplet(droplet)
@@ -488,7 +488,7 @@
 <p>可以简单认为Harmonizer的任务有两个： 执行周期性的任务（比如定期获取DesiredState，分析应用状态等） 对一些消息做出反应（比如droplet.exit消息）</p>
 
 <p>现在可以来看Harmonizer模块执行周期性任务的代码实现，首先进入Harmonizer的prepare方法：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">prepare</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">prepare</span>
   logger<span style="color:#555">.</span>debug { <span style="color:#c30">&#34;harmonizer: #prepare&#34;</span> }
   <span style="color:#09f;font-style:italic">#schedule time-based actions</span>
   scheduler<span style="color:#555">.</span>immediately { update_desired_state }
@@ -516,7 +516,7 @@
 <p>通过scheduler的调度实现周期性分析应用状态的正确性，实现为analyze_app，该部分内容将着重讲述anaylze_apps的实现。</p>
 
 <p>首先进入analyze_apps的代码实现：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">analyze_apps</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">analyze_apps</span>
   <span style="color:#069;font-weight:bold">unless</span> desired_state<span style="color:#555">.</span>available?
     logger<span style="color:#555">.</span>warn(<span style="color:#c30">&#34;Droplet analysis interrupted. Desired state is not available&#34;</span>)
     <span style="color:#069;font-weight:bold">return</span>
@@ -529,7 +529,7 @@
   droplets_analysis_for_slice
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>进行简单的处理之后，该方法主要调用droplets_analysis_for_slice方法，实现如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">droplets_analysis_for_slice</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">droplets_analysis_for_slice</span>
   droplets_analyzed_per_iteration <span style="color:#555">=</span> <span style="color:#360">Config</span><span style="color:#555">.</span>get_param(<span style="color:#fc3">:number_of_droplets_analyzed_per_analysis_iteration</span>)
   droplets <span style="color:#555">=</span> @droplet_registry<span style="color:#555">.</span>values<span style="color:#555">.</span>slice(@current_analysis_slice, droplets_analyzed_per_iteration)
   <span style="color:#069;font-weight:bold">if</span> droplets <span style="color:#555">&amp;&amp;</span> droplets<span style="color:#555">.</span>any?
@@ -545,7 +545,7 @@
   <span style="color:#069;font-weight:bold">end</span>
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>分析的方式为找出@droplet_registry对象的每一个值，所谓一个应用，然后对这个应用的每一个实例进行分析，执行analyze_droplet方法，如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">analyze_droplet</span>(droplet)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">analyze_droplet</span>(droplet)
   on_extra_app(droplet) <span style="color:#069;font-weight:bold">if</span> droplet<span style="color:#555">.</span>is_extra?
   <span style="color:#069;font-weight:bold">if</span> droplet<span style="color:#555">.</span>has_missing_indices?
     on_missing_instances(droplet)
@@ -558,7 +558,7 @@
 <p>实现过程中，首先判断该应用实例是否为多余的实例，若是执行on_extra_app方法；然后判断该应用实例是否存在多余的分片，若是执行on_missing_instances方法；接着对于该应用实例执行update_extra_instances方法，以及执行on_extra_instances方法和prune_crashes方法。关于这些方法的具体实现，在类Droplet中，主要是droplet出现不一致状态的判断以及修正。</p>
 
 <p>以上分析analyze_apps是Harmonizer模块最重要的功能之一，但是除此之外，Harmonizer模块还会将处理一些其他的状态，比如：在ActualState模块接收到’droplet.exited’消息的时候，需要判断droplet退出的原因，然后根据原因，让Harmonizer做出相应的操作，源码如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">case</span> message<span style="color:#555">.</span>fetch(<span style="color:#fc3">:reason</span>)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">case</span> message<span style="color:#555">.</span>fetch(<span style="color:#fc3">:reason</span>)
   <span style="color:#069;font-weight:bold">when</span> <span style="color:#360">CRASHED</span>
     varz<span style="color:#555">[</span><span style="color:#fc3">:crashed_instances</span><span style="color:#555">]</span> <span style="color:#555">+=</span> <span style="color:#f60">1</span>
     droplet<span style="color:#555">.</span>process_exit_crash(message)
@@ -575,7 +575,7 @@
 <p>而在应用的状态为CRASHED时，Harmonizer在on_exit_crashed方法的处理过程会相当复杂，以下将一步一步分析其实现过程。</p>
 
 <p>首先进入on_exit_crash方法中：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">on_exit_crashed</span>(droplet, message)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">on_exit_crashed</span>(droplet, message)
   logger<span style="color:#555">.</span>debug { <span style="color:#c30">&#34;harmonizer: exit_crashed&#34;</span> }
   index <span style="color:#555">=</span> message<span style="color:#555">.</span>fetch(<span style="color:#fc3">:index</span>)
   instance <span style="color:#555">=</span> droplet<span style="color:#555">.</span>get_instance(message<span style="color:#555">.</span>fetch(<span style="color:#fc3">:index</span>), message<span style="color:#555">.</span>fetch(<span style="color:#fc3">:version</span>))
@@ -592,7 +592,7 @@
 <p>为了成功处理应用实例的flapping状态，Harmonizer提供以下策略： 计算出一个延迟，经过这个延迟时间后，立即重启这个应用实例； 对于之后的每次的崩溃，将以上的延迟时间翻倍，但不能超过max_restart_delay时间； 在计算延迟的时候，会加一个随机噪声，以避免连续的重启（关于噪声的意义，我还没有太理解，正在请教Pivotal的大牛） 当应用实例的崩溃次数超过giveup_crash_number，就放弃重启这个应用实例。</p>
 
 <p>以下进入execute_flapping_policy方法：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">execute_flapping_policy</span>(droplet, instance, chatty)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">execute_flapping_policy</span>(droplet, instance, chatty)
   <span style="color:#069;font-weight:bold">unless</span> instance<span style="color:#555">.</span>pending_restart?
     <span style="color:#069;font-weight:bold">if</span> instance<span style="color:#555">.</span>giveup_restarting?
       logger<span style="color:#555">.</span>info { <span style="color:#c30">&#34;given up on restarting: app_id=</span><span style="color:#a00">#{</span>droplet<span style="color:#555">.</span>id<span style="color:#a00">}</span><span style="color:#c30"> index=</span><span style="color:#a00">#{</span>instance<span style="color:#555">.</span>index<span style="color:#a00">}</span><span style="color:#c30">&#34;</span> } <span style="color:#069;font-weight:bold">if</span> chatty
@@ -605,7 +605,7 @@
 <p>可以看到在实现过程中，会通过calculate_delay方法计算挤一个delay值，然后通过这个delay值去立即执行方法schedule_delayed_restart。</p>
 
 <p>以下进入schedule_delayed_restart方法的代码实现：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">schedule_delayed_restart</span>(droplet, instance, index, delay)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">schedule_delayed_restart</span>(droplet, instance, index, delay)
   receipt <span style="color:#555">=</span> scheduler<span style="color:#555">.</span>after(delay) <span style="color:#069;font-weight:bold">do</span>
     instance<span style="color:#555">.</span>unmark_pending_restart!
     nudger<span style="color:#555">.</span>start_flapping_instance_immediately(droplet, index)
@@ -613,7 +613,7 @@
   instance<span style="color:#555">.</span>mark_pending_restart_with_receipt!(receipt)
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>可见在运行过程中，通过scheduler对象实现在delay这个时间段后，立即让nudger对象重启该实例对象。 以下是计算delay的方法实现：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">calculate_delay</span>(instance)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">calculate_delay</span>(instance)
   delay <span style="color:#555">=</span> <span style="color:#555">[</span>interval(<span style="color:#fc3">:max_restart_delay</span>),
            interval(<span style="color:#fc3">:min_restart_delay</span>) <span style="color:#555">&lt;&lt;</span> (instance<span style="color:#555">.</span>crash_count <span style="color:#555">-</span> interval(<span style="color:#fc3">:flapping_death</span>) <span style="color:#555">-</span> <span style="color:#f60">1</span>)
           <span style="color:#555">].</span>min<span style="color:#555">.</span>to_f
@@ -629,7 +629,7 @@
 <p>在实现过程中Nudger模块，通过分发cloudcontrollers.hm.request消息来通知Cloud Controller需要重启或者停止特定的应用实例。另外Nudger来维护了一个优先级队列来存储这部分的请求，实现优先级分发。</p>
 
 <p>首先进入Nudger对于请求消息的分发实现：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">deque_batch_of_requests</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">deque_batch_of_requests</span>
   @queue_batch_size<span style="color:#555">.</span>times <span style="color:#069;font-weight:bold">do</span>
     <span style="color:#069;font-weight:bold">break</span> <span style="color:#069;font-weight:bold">if</span> @queue<span style="color:#555">.</span>empty?
 
@@ -640,7 +640,7 @@
   <span style="color:#069;font-weight:bold">end</span>
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>首先从队列中取消一个请求，然后将请求通过publish_request_message方法发布出去，发布实现如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">publish_request_message</span>(operation, payload)
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">publish_request_message</span>(operation, payload)
   logger<span style="color:#555">.</span>info(<span style="color:#c30">&#34;hm.nudger.request&#34;</span>,
               <span style="color:#fc3">:operation</span> <span style="color:#555">=&gt;</span> operation, <span style="color:#fc3">:payload</span> <span style="color:#555">=&gt;</span> payload)
   <span style="color:#069;font-weight:bold">if</span> operation <span style="color:#555">==</span> <span style="color:#c30">&#39;start&#39;</span>
@@ -659,7 +659,7 @@
 <p>Reports模块主要是为了对于”healthmanager.status”, ”healthmanager.health”, ”healthmanager.droplet”这一系列的请求。</p>
 
 <p>Reports模块订阅这些主题消息的代码实现如下：</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">prepare</span>
+<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">prepare</span>
   @message_bus<span style="color:#555">.</span>subscribe(<span style="color:#c30">&#39;healthmanager.status&#39;</span>) <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>msg, reply_to<span style="color:#555">|</span>
     process_status_message(msg, reply_to)
   <span style="color:#069;font-weight:bold">end</span>
@@ -926,7 +926,7 @@
             </li>
             
             <li>
-                <a href="/categories/karmada">karmada (3)</a>
+                <a href="/categories/karmada">karmada (4)</a>
             </li>
             
             <li>
@@ -1179,6 +1179,19 @@
                 
                 <div class="item same-height-row clearfix">
                     <div class="image same-height-always">
+                        <a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">
+                          
+                            <img src="/img/blogs/20/karmada-scheduler.png" class="img-responsive" alt="多云环境下的资源调度：karmada scheduler的框架和实现">
+                          
+                        </a>
+                    </div>
+                    <div class="name same-height-always">
+                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/">多云环境下的资源调度：karmada scheduler的框架和实现</a></h5>
+                    </div>
+                </div>
+                
+                <div class="item same-height-row clearfix">
+                    <div class="image same-height-always">
                         <a href="http://www.sel.zju.edu.cn/blog/2021/09/16/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E6%88%90%E5%91%98%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E7%9C%8B%E7%9C%8B%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AEkarmada%E6%98%AF%E5%A6%82%E4%BD%95%E5%81%9A%E5%88%B0%E7%9A%84/">
                           
                             <img src="/img/blogs/19/karmada-arch.jpg" class="img-responsive" alt="多云环境下的成员集群管理，看看开源项目karmada是如何做到的">
@@ -1200,19 +1213,6 @@
                     </div>
                     <div class="name same-height-always">
                         <h5><a href="http://www.sel.zju.edu.cn/blog/2021/09/13/%E4%BB%8Ekarmada-api%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E5%BA%94%E7%94%A8%E8%B5%84%E6%BA%90%E7%BC%96%E6%8E%92%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/">从karmada API角度分析多云环境下的应用资源编排：设计与实现</a></h5>
-                    </div>
-                </div>
-                
-                <div class="item same-height-row clearfix">
-                    <div class="image same-height-always">
-                        <a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
-                          
-                            <img src="/img/blogs/17/karmada-arch.png" class="img-responsive" alt="karmada上手指南">
-                          
-                        </a>
-                    </div>
-                    <div class="name same-height-always">
-                        <h5><a href="http://www.sel.zju.edu.cn/blog/2021/08/23/karmada%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">karmada上手指南</a></h5>
                     </div>
                 </div>
                 
