@@ -18,7 +18,7 @@
   
   <meta name="description" content="摘要: Docker是基于Go语言开发，通过分层镜像标准化和内核虚拟化技术，使得应用开发者和运维工程师可以以统一的方式跨平台发布应用。镜像是Docker最核心的技术之一，也是应用发布的标准格式。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -295,10 +295,10 @@
 <p>是使用Registry Mirror，它的原理类似于缓存，如果镜像在Mirror中命中则直接返回给客户端，否则从存放镜像的Registry上拉取并自动缓存在Mirror中。最酷的是，是否使用Mirror对Docker使用者来讲是透明的，也就是说在配置Mirror以后，大家可以仍然输入docker pull ubuntu来拉取Docker Hub镜像，除了速度变快了，和以前没有任何区别。</p>
 
 <p>了以更便捷的方式对接Docker Hub生态圈，使用Registry Mirror自然成为我的首选。接下来我就和大家一起看看Docker使用Mirror来拉取镜像的过程。下面的例子，我使用的是由<strong><a href="http://www.daocloud.io/">DaoCloud</a></strong>提供的Registry Mirror服务，在申请开通Mirror服务后你会得到一个Mirror地址，然后我们要做的就是把这个地址配置在Docker Server启动脚本中，重启Docker服务后Mirror配置就生效了（如何获得Mirror服务可以参考本篇文章的附录） Ubuntu下配置Docker Registry Mirror的命令如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">sudo <span style="color:#366">echo</span> “DOCKER_OPTS<span style="color:#555">=</span><span style="color:#c30;font-weight:bold">\”\$</span>DOCKER_OPTS –registry-mirror<span style="color:#555">=</span>http://your-id.m.daocloud.io -d<span style="color:#c30;font-weight:bold">\”</span>” &gt;&gt; /etc/default/docker
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">sudo <span style="color:#366">echo</span> “DOCKER_OPTS<span style="color:#555">=</span><span style="color:#c30;font-weight:bold">\”\$</span>DOCKER_OPTS –registry-mirror<span style="color:#555">=</span>http://your-id.m.daocloud.io -d<span style="color:#c30;font-weight:bold">\”</span>” &gt;&gt; /etc/default/docker
 sudo service docker restart</code></pre></div>
 <p>如果你是用的Boot2Docker，配置命令为：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># 进入Boot2Docker Start Shell，并执行</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># 进入Boot2Docker Start Shell，并执行</span>
 sudo su
 <span style="color:#366">echo</span> “EXTRA_ARGS<span style="color:#555">=</span><span style="color:#c30;font-weight:bold">\”</span>–registry-mirror<span style="color:#555">=</span>http://your-id.m.daocloud.io<span style="color:#c30;font-weight:bold">\”</span>” &gt;&gt; /var/lib/boot2docker/profile
 <span style="color:#366">exit</span>

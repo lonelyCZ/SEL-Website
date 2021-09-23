@@ -6,11 +6,7 @@
     <description>Recent content in books on 浙大SEL实验室</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Wed, 30 Nov 2016 17:41:43 +0000</lastBuildDate>
-    
-	<atom:link href="http://www.sel.zju.edu.cn/tags/books/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <lastBuildDate>Wed, 30 Nov 2016 17:41:43 +0000</lastBuildDate><atom:link href="http://www.sel.zju.edu.cn/tags/books/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>《Docker容器与容器云》第2版推荐</title>
       <link>http://www.sel.zju.edu.cn/blog/2016/11/30/docker%E5%AE%B9%E5%99%A8%E4%B8%8E%E5%AE%B9%E5%99%A8%E4%BA%91%E7%AC%AC2%E7%89%88%E6%8E%A8%E8%8D%90/</link>

@@ -18,7 +18,7 @@
   
   <meta name="description" content="Cloud Foundry作为业界出众的PaaS平台，在应用的可扩展性方面做得非常优秀。具体来讲，在一个应用需要横向伸展的时候，Cloud Foundry可以轻松地帮助用户做好伸展工作，也就是创建出一个应用的多个实例，多个实例地位相等，多个实例共同为用户服务，多个实例共同分担访问压力。大致来说，可以认为是共同分担访问压力，但是也不是针对所有该应用的访问，都进行均衡，分发到不同的应用实例处。譬如：当Cloud Foundry的访问用户访问应用时，第一次的访问，gorouter会将请求分发到应用的某个实例处，但是如果该用户之后的访问都是有状态的，不希望之后的访问会被分发到该应用的其他实例处。针对以上这种情况，Cloud Foundry提供了自己的解决方案，使用StickySession的方式，保证请求依旧分发给指定的应用实例。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -231,7 +231,7 @@
 <h2 id="如何给http请求添加stickysession"><strong>如何给HTTP请求添加StickySession</strong></h2>
 
 <p>在分析这个问题的时候，首先我们需要提出另一个问题：什么情况下需要给HTTP请求添加StickySession？ 首先，来看这样的一个方法setupStickySession的go语言实现：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    func (h <span style="color:#555">*</span><span style="color:#360">RequestHandler</span>) setupStickySession(endpointResponse <span style="color:#555">*</span>http<span style="color:#555">.</span>Response, endpoint <span style="color:#555">*</span>route<span style="color:#555">.</span>Endpoint) {  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    func (h <span style="color:#555">*</span><span style="color:#360">RequestHandler</span>) setupStickySession(endpointResponse <span style="color:#555">*</span>http<span style="color:#555">.</span>Response, endpoint <span style="color:#555">*</span>route<span style="color:#555">.</span>Endpoint) {  
         needSticky :<span style="color:#555">=</span> <span style="color:#069">false</span>  
         <span style="color:#069;font-weight:bold">for</span> _, v :<span style="color:#555">=</span> range endpointResponse<span style="color:#555">.</span>Cookies() {  
              <span style="color:#069;font-weight:bold">if</span> v<span style="color:#555">.</span>Name <span style="color:#555">==</span> <span style="color:#360">StickyCookieKey</span> {  
@@ -251,7 +251,7 @@
         }  
     }  </code></pre></div>
 <p>紧接着，查看setupStickySession方法何时被调用的代码：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    func (h <span style="color:#555">*</span><span style="color:#360">RequestHandler</span>) <span style="color:#360">HandleHttpRequest</span>(transport <span style="color:#555">*</span>http<span style="color:#555">.</span>Transport, endpoint <span style="color:#555">*</span>route<span style="color:#555">.</span>Endpoint) (<span style="color:#555">*</span>http<span style="color:#555">.</span>Response, error) {  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    func (h <span style="color:#555">*</span><span style="color:#360">RequestHandler</span>) <span style="color:#360">HandleHttpRequest</span>(transport <span style="color:#555">*</span>http<span style="color:#555">.</span>Transport, endpoint <span style="color:#555">*</span>route<span style="color:#555">.</span>Endpoint) (<span style="color:#555">*</span>http<span style="color:#555">.</span>Response, error) {  
         h<span style="color:#555">.</span>transport <span style="color:#555">=</span> transport  
     
         h<span style="color:#555">.</span>setupRequest(endpoint)  
@@ -269,7 +269,7 @@
         <span style="color:#069;font-weight:bold">return</span> endpointResponse, err  
     }  </code></pre></div>
 <p>在setupStickySession方法中，可以看到：首先进入一个循环语句块中，当endpointResponse中的cookies中有名为StickyCookieKey的话，将needSticky字段置为true，跳出循环。这里也就回答了什么时候需要给HTTP请求添加StickySession的问题。关于StickyCookieKey的值，可以先看一下gorouter的设置：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    const (  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    const (  
         <span style="color:#360">VcapCookieId</span>    <span style="color:#555">=</span> <span style="color:#c30">&#34;__VCAP_ID__&#34;</span>  
         <span style="color:#360">StickyCookieKey</span> <span style="color:#555">=</span> <span style="color:#c30">&#34;JSESSIONID&#34;</span>  
     )  </code></pre></div>
@@ -280,7 +280,7 @@
 <h2 id="如何通过stickysession辨别应用的具体实例"><strong>如何通过StickySession辨别应用的具体实例</strong></h2>
 
 <p>当一个请求到达gorouter的时候，gorouter需要首先辨别该请求中是否带有StickySession的信息，如果有的话，，gorouter分析该请求中的相应信息，最终得到指定应用实例的信息，并将请求转发到该指定应用实例。具体实现代码如下： [plain] view plaincopy</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    func (<span style="color:#366">p</span> <span style="color:#555">*</span>proxy) lookup(request <span style="color:#555">*</span>http<span style="color:#555">.</span>Request) (<span style="color:#555">*</span>route<span style="color:#555">.</span>Endpoint, bool) {  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    func (<span style="color:#366">p</span> <span style="color:#555">*</span>proxy) lookup(request <span style="color:#555">*</span>http<span style="color:#555">.</span>Request) (<span style="color:#555">*</span>route<span style="color:#555">.</span>Endpoint, bool) {  
         uri :<span style="color:#555">=</span> route<span style="color:#555">.</span>Uri(hostWithoutPort(request))  
     
         <span style="color:#3aa">//</span> <span style="color:#360">Try</span> choosing a backend using sticky session  

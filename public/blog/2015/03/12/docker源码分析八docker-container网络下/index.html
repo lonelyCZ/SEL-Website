@@ -18,7 +18,7 @@
   
   <meta name="description" content="如何使用Docker Container的网络，一直是工业界倍加关心的问题。本文将从Linux内核原理的角度阐述了什么是Docker Container，并对Docker Container 4种不同的网络模式进行了初步的介绍，最终贯穿Docker 架构中的多个模块，如Docker Client、Docker Daemon、execdriver以及libcontainer，深入分析Docker Container网络的实现步骤。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -236,9 +236,10 @@
 <h3 id="1-2-runconfig包解析"><strong>1.2 runconfig包解析</strong></h3>
 
 <p>CmdRun函数的实现位于<a href="https://github.com/docker/docker/blob/v1.2.0/api/client/commands.go#L1990">./docker/api/client/commands.go</a>。CmdRun执行的第一个步骤为：通过runconfig包中ParseSubcommand函数解析Docker Client传入的参数，并从中解析出相应的config，hostConfig以及cmd对象，实现代码如下:</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    config, hostConfig, cmd, err <span style="color:#555">:=</span> runconfig.<span style="color:#c0f">ParseSubcommand</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    config, hostConfig, cmd, err <span style="color:#555">:=</span> runconfig.<span style="color:#c0f">ParseSubcommand</span>
     (cli.<span style="color:#c0f">Subcmd</span>(<span style="color:#c30">&#34;run&#34;</span>, <span style="color:#c30">&#34;[OPTIONS] IMAGE [COMMAND] [ARG...]&#34;</span>, 
-    <span style="color:#c30">&#34;Run a command in a new container&#34;</span>), args, <span style="color:#069;font-weight:bold">nil</span>) </code></pre></div>
+    <span style="color:#c30">&#34;Run a command in a new container&#34;</span>), args, <span style="color:#069;font-weight:bold">nil</span>) 
+</code></pre></div>
 <p>其中，config的类型为Config结构体，hostConfig的类型为HostConfig结构体，两种类型的定义均位于runconfig包。Config与HostConfig类型同用以描述Docker Container的配置信息，然而两者之间又有着本质的区别，最大的区别在于两者各自的作用范畴：</p>
 
 <ul>
@@ -249,7 +250,7 @@
 <h4 id="1-2-1-config结构体"><strong>1.2.1 Config结构体</strong></h4>
 
 <p>Config结构体描述Docker Container本身的属性信息，这些信息与容器所在的host宿主机无关。结构体的定义如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> Config <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> Config <span style="color:#069;font-weight:bold">struct</span> {
         Hostname        <span style="color:#078;font-weight:bold">string</span>
         Domainname      <span style="color:#078;font-weight:bold">string</span>
         User            <span style="color:#078;font-weight:bold">string</span>
@@ -284,7 +285,7 @@
 <h4 id="1-2-2-hostconfig结构体"><strong>1.2.2 HostConfig结构体</strong></h4>
 
 <p>HostConfig结构体描述Docker Container与宿主机相关的属性信息，结构体的定义如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> HostConfig <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> HostConfig <span style="color:#069;font-weight:bold">struct</span> {
         Binds           []<span style="color:#078;font-weight:bold">string</span>
         ContainerIDFile <span style="color:#078;font-weight:bold">string</span>
         LxcConf         []utils.KeyValuePair
@@ -309,7 +310,7 @@
 <h4 id="1-2-3-runconfig解析网络模式"><strong>1.2.3 runconfig解析网络模式</strong></h4>
 
 <p>讲述完Config与HostConfig结构体之后，回到runconfig包中分析如何解析与Docker Container网络模式相关的配置信息，并将这部分信息传递给config实例与hostConfig实例。 runconfig包中的ParseSubcommand函数调用parseRun函数完成命令请求的分析，实现代码位于<a href="https://github.com/docker/docker/blob/v1.2.0/runconfig/parse.go#L37-L39">./docker/runconfig/parse.go#L37-L39</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">ParseSubcommand</span>(cmd <span style="color:#555">*</span>flag.FlagSet, args []<span style="color:#078;font-weight:bold">string</span>,
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">ParseSubcommand</span>(cmd <span style="color:#555">*</span>flag.FlagSet, args []<span style="color:#078;font-weight:bold">string</span>,
     sysInfo <span style="color:#555">*</span>sysinfo.SysInfo) (<span style="color:#555">*</span>Config, <span style="color:#555">*</span>HostConfig, <span style="color:#555">*</span>flag.FlagSet, <span style="color:#078;font-weight:bold">error</span>) {
             <span style="color:#069;font-weight:bold">return</span> <span style="color:#c0f">parseRun</span>(cmd, args, sysInfo)
     }</code></pre></div>
@@ -323,13 +324,13 @@
 </ul>
 
 <p>本文主要分析Docker Container的网络模式，而parseRun函数中有关容器网络模式的flag参数有flNetwork与flNetMode，两者的定义分别位于<a href="https://github.com/docker/docker/blob/v1.2.0/runconfig/parse.go#L62">./docker/runconfig/parse.go#L62</a>与<a href="https://github.com/docker/docker/blob/v1.2.0/runconfig/parse.go#L75">./docker/runconfig/parse.go#L75</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    flNetwork = cmd.<span style="color:#c0f">Bool</span>([]<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;#n&#34;</span>, <span style="color:#c30">&#34;#-networking&#34;</span>}, <span style="color:#069;font-weight:bold">true</span>, <span style="color:#c30">&#34;Enable networking for this container&#34;</span>)
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    flNetwork = cmd.<span style="color:#c0f">Bool</span>([]<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;#n&#34;</span>, <span style="color:#c30">&#34;#-networking&#34;</span>}, <span style="color:#069;font-weight:bold">true</span>, <span style="color:#c30">&#34;Enable networking for this container&#34;</span>)
 
     flNetMode = cmd.<span style="color:#c0f">String</span>([]<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;-net&#34;</span>}, <span style="color:#c30">&#34;bridge&#34;</span>, <span style="color:#c30">&#34;Set the Network mode for the container\n&#39;bridge&#39;: creates a new network stack for the container on the docker bridge\n&#39;none&#39;: no networking for this container\n&#39;container:&lt;name|id&gt;&#39;: reuses another container network stack\n&#39;host&#39;: use the host network stack inside the container. Note: the host mode gives the container full access to local system services such as D-bus and is therefore considered insecure.&#34;</span>)</code></pre></div>
 <p>可见flag参数flNetwork表示是否开启容器的网络模式，若为true则开启，说明需要给容器创建网络环境；否则不开启，说明不给容器赋予网络功能。该flag参数的默认值为true，另外使用该flag的方式为：在docker run之后设定&ndash;networking或者-n，如：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    docker run <span style="color:#555">--</span>networking <span style="color:#069;font-weight:bold">true</span> ubuntu <span style="color:#555">/</span>bin<span style="color:#555">/</span>bash</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    docker run <span style="color:#555">--</span>networking <span style="color:#069;font-weight:bold">true</span> ubuntu <span style="color:#555">/</span>bin<span style="color:#555">/</span>bash</code></pre></div>
 <p>另一个flag参数flNetMode则表示为容器设定的网络模式，共有四种选项，分别是：bridge、none、container:<name|id>和host。四种模式的作用上文已经详细解释，此处不再赘述。使用该flag的方式为：在docker run之后设定&ndash;net，如：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    Docker run <span style="color:#555">--</span>net host ubuntu <span style="color:#555">/</span>bin<span style="color:#555">/</span>bash</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    Docker run <span style="color:#555">--</span>net host ubuntu <span style="color:#555">/</span>bin<span style="color:#555">/</span>bash</code></pre></div>
 <p>用户使用docker run启动容器时设定了以上两个flag参数（&ndash;networking和&ndash;net），则runconfig包会解析出这两个flag的值。最终，通过flag参数flNetwork，得到Config类型实例config的属性NetworkDisabled；通过flag参数flNetMode，得到HostConfig类型实例hostConfig的属性NetworkMode。 函数parseRun返回config、hostConfig与cmd，代表着runconfig包解析配置参数工作的完成，CmdRun得到返回内容之后，继续向下执行。</p>
 
 <h3 id="1-3-cmdrun执行"><strong>1.3 CmdRun执行</strong></h3>
@@ -362,14 +363,14 @@
 <p>config := runconfig.ContainerConfigFromJob(job)</p>
 
 <p>至此，Docker Client处理得到的config对象，已经传递至Docker Daemon的config对象，config对象中已经含有属性NetworkDisabled具体值。 处理得到config对象之后，Docker Daemon紧接着创建container对象，并为Docker Container作相应的准备工作。具体的实现代码位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/create.go#L73-L78">./docker/daemon/create.go#L73-L78</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> container, err = daemon.<span style="color:#c0f">newContainer</span>(name, config, img); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> container, err = daemon.<span style="color:#c0f">newContainer</span>(name, config, img); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
         <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">nil</span>, <span style="color:#069;font-weight:bold">nil</span>, err
     }
     <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> daemon.<span style="color:#c0f">createRootfs</span>(container, img); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
         <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">nil</span>, <span style="color:#069;font-weight:bold">nil</span>, err
     }</code></pre></div>
 <p>与Docker Container网络模式配置相关的内容主要位于创建container对象中。newContainer函数的定义位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/daemon.go#L516-L550">./docker/daemon/daemon.go#L516-L550</a>，具体的container对象如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    container <span style="color:#555">:=</span> <span style="color:#555">&amp;</span>Container{
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    container <span style="color:#555">:=</span> <span style="color:#555">&amp;</span>Container{
         ID:              id,
         Created:         time.<span style="color:#c0f">Now</span>().<span style="color:#c0f">UTC</span>(),
         Path:            entrypoint,
@@ -384,7 +385,7 @@
         State:           <span style="color:#c0f">NewState</span>(),    
     }</code></pre></div>
 <p>在container对象中，config对象直接赋值给container对象的Config属性，另外hostConfig属性与NetworkSeeetings属性均为空。其中hostConfig对象将在start container请求执行过程中被赋值，NetworkSettings类型的作用是描述容器的网络具体信息，定义位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/network_settings.go#L11-L18">./docker/daemon/network_settings.go#L11-L18</a>，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> NetworkSettings <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> NetworkSettings <span style="color:#069;font-weight:bold">struct</span> {
             IPAddress   <span style="color:#078;font-weight:bold">string</span>
             IPPrefixLen <span style="color:#078;font-weight:bold">int</span>
             Gateway     <span style="color:#078;font-weight:bold">string</span>
@@ -402,9 +403,10 @@
 <h3 id="2-2启动容器之网络配置"><strong>2.2启动容器之网络配置</strong></h3>
 
 <p>创建容器阶段，Docker Daemon创建了容器对象container，container对象内部的Config属性含有NetworkDisabled。创建容器完成之后，Docker Daemon还需要接收Docker Client的请求，并执行start container的操作，即启动容器。 启动容器过程中，Docker Daemon首先通过runconfig包中ContainerHostConfigFromJob函数，解析出请求中的hostConfig对象，解析过程代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    hostConfig <span style="color:#555">:=</span> runconfig.<span style="color:#c0f">ContainerHostConfigFromJob</span>(job) </code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    hostConfig <span style="color:#555">:=</span> runconfig.<span style="color:#c0f">ContainerHostConfigFromJob</span>(job) 
+</code></pre></div>
 <p>至此，Docker Client处理得到的hostConfig对象，已经传递至Docker Daemon的hostConfig对象，hostConfig对象中已经含有属性NetworkMode具体值。 容器启动的所有工作，均由以下的Start函数来完成，代码位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/start.go#L36-L38">./docker/daemon/start.go#L36-L38</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> container.<span style="color:#c0f">Start</span>(); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> container.<span style="color:#c0f">Start</span>(); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
             <span style="color:#069;font-weight:bold">return</span> job.<span style="color:#c0f">Errorf</span>(<span style="color:#c30">&#34;Cannot start container %s: %s&#34;</span>, name, err)
     }</code></pre></div>
 <p>Start函数实现了容器的启动。更为具体的描述是：Start函数实现了进程的启动，另外在启动进程的同时为进程设定了命名空间（namespace），启动完毕之后为进程完成了资源使用的控制，从而保证进程以及之后进程的子进程都会在同一个命名空间内，且受到相同的资源控制。如此一来，Start函数创建的进程，以及该进程的子进程，形成一个进程组，该进程组处于资源隔离和资源控制的环境，我们习惯将这样的进程组环境称为容器，也就是这里的Docker Container。 回到Start函数的执行，位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/container.go#L275-L320">./docker/daemon/container.go#L275-L320</a>。Start函数执行过程中，与Docker Container网络模式相关的部分主要有三部分：</p>
@@ -433,23 +435,23 @@
 <h5 id="2-2-1-2-初始化other-container网络模式配置"><strong>2.2.1.2 初始化other container网络模式配置</strong></h5>
 
 <p>Docker Container的other container网络模式意味着：容器使用其他已经创建容器的网络环境。 Docker Daemon首先判断host网络模式之后，若不为host网络模式，则继续判断Docker Container网络模式是否为other container。如果Docker Container的网络模式为other container（假设使用的-net参数为&ndash;net=container:17adef，其中17adef为容器ID）。Docker Daemon所做的执行操作包括两部分。 第一步，从container对象的hostConfig属性中找出NetworkMode，并找到相应的容器，即17adef的容器对象container，实现代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    nc, err <span style="color:#555">:=</span> container.<span style="color:#c0f">getNetworkedContainer</span>()</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    nc, err <span style="color:#555">:=</span> container.<span style="color:#c0f">getNetworkedContainer</span>()</code></pre></div>
 <p>第二步，将17adef容器对象的HostsPath、ResolveConfPath、Hostname和Domainname赋值给当前容器对象container，实现代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    container.HostsPath = nc.HostsPath
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    container.HostsPath = nc.HostsPath
     container.ResolvConfPath = nc.ResolvConfPath
     container.Config.Hostname = nc.Config.Hostname
     container.Config.Domainname = nc.Config.Domainname</code></pre></div>
 <h5 id="2-2-1-3-初始化none网络模式配置"><strong>2.2.1.3 初始化none网络模式配置</strong></h5>
 
 <p>Docker Container的none网络模式意味着不给该容器创建任何网络环境，容器只能使用127.0.0.1的本机网络。 Docker Daemon通过config属性的DisableNetwork来判断是否为none网络模式。实现代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> container.daemon.config.DisableNetwork {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> container.daemon.config.DisableNetwork {
             container.Config.NetworkDisabled = <span style="color:#069;font-weight:bold">true</span>
             <span style="color:#069;font-weight:bold">return</span> container.<span style="color:#c0f">buildHostnameAndHostsFiles</span>(<span style="color:#c30">&#34;127.0.1.1&#34;</span>)
     }</code></pre></div>
 <h5 id="2-2-1-4-初始化bridge网络模式配置"><strong>2.2.1.4 初始化bridge网络模式配置</strong></h5>
 
 <p>Docker Container的bridge网络模式意味着为容器创建桥接网络模式。桥接模式使得Docker Container创建独立的网络环境，并通过“桥接”的方式实现Docker Container与外界的网络通信。 初始化bridge网络模式的配置，实现代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> container.<span style="color:#c0f">allocateNetwork</span>(); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> container.<span style="color:#c0f">allocateNetwork</span>(); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
             <span style="color:#069;font-weight:bold">return</span> err
     }</code></pre></div>
 <p>return container.buildHostnameAndHostsFiles(container.NetworkSettings.IPAddress)</p>
@@ -470,7 +472,7 @@
 <p>简单介绍Command类型之后，回到Docker Daemon启动容器网络的源码分析。在Start函数的执行流程中，紧接initializeNetworking()之后，与Docker Container网络相关的是populateCommand环节。populateCommand的函数实现位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/container.go#L191-L273">./docker/daemon/container.go#L191-L274</a>。</p>
 
 <p>上文已经提及，populateCommand的作用是创建包execdriver的对象Command，该Command中既有启动容器进程的外部命令，同时也有众多为容器环境的配置信息，包括网络。 本小节，更多的分析populateCommand如何填充Command对象中的网络信息，其他信息的分析会在《源码分析系列》的后续进行展开。 Docker总共有四种网络模式，故populateCommand自然需要判断容器属于哪种网络模式，随后将具体的网络模式信息，写入Command对象的Network属性中。查验Docker Container网络模式的代码位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/container.go#L204-L227">./docker/daemon/container.go#L204-L227</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    parts <span style="color:#555">:=</span> strings.<span style="color:#c0f">SplitN</span>(<span style="color:#366">string</span>(c.hostConfig.NetworkMode), <span style="color:#c30">&#34;:&#34;</span>, <span style="color:#f60">2</span>)
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    parts <span style="color:#555">:=</span> strings.<span style="color:#c0f">SplitN</span>(<span style="color:#366">string</span>(c.hostConfig.NetworkMode), <span style="color:#c30">&#34;:&#34;</span>, <span style="color:#f60">2</span>)
         <span style="color:#069;font-weight:bold">switch</span> parts[<span style="color:#f60">0</span>] {
         <span style="color:#069;font-weight:bold">case</span> <span style="color:#c30">&#34;none&#34;</span>:
         <span style="color:#069;font-weight:bold">case</span> <span style="color:#c30">&#34;host&#34;</span>:
@@ -501,7 +503,7 @@
 <h4 id="2-2-3启动容器内部进程"><strong>2.2.3启动容器内部进程</strong></h4>
 
 <p>当为容器做好所有的准备与配置之后，Docker Daemon需要真正意义上的启动容器。根据Docker Daemon启动容器流程涉及的Docker模块中可以看到，这样的请求，会被发送至execdriver，再经过libcontainer，最后实现真正启动进程，创建完容器。 回到Docker Daemon的启动容器，daemon包中start函数的最后一步即为执行container.waitForStart()。waitForStart函数的定义位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/container.go#L1070-L1082">./docker/daemon/container.go#L1070-L1082</a>，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (container <span style="color:#555">*</span>Container) <span style="color:#c0f">waitForStart</span>() <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (container <span style="color:#555">*</span>Container) <span style="color:#c0f">waitForStart</span>() <span style="color:#078;font-weight:bold">error</span> {
             container.monitor = <span style="color:#c0f">newContainerMonitor</span>(container, container.hostConfig.RestartPolicy)
             
             <span style="color:#069;font-weight:bold">select</span> {
@@ -515,9 +517,10 @@
 <p>以上代码运行过程中首先通过newContainerMonitor返回一个初始化的containerMonitor对象，该对象中带有容器进程的重启策略（RestartPolicy）。这里简单介绍containerMonitor对象。总体而言，containerMonitor对象用以监视容器中第一个进程的执行。如果containerMonitor中指定了一种进程重启策略，那么一旦容器内部进程没有启动成功，Docker Daemon会使用重启策略来重启容器。如果在重启策略下，容器依然没有成功启动，那么containerMonitor对象会负责重置以及清除所有已经为容器准备好的资源，例如已经为容器分配好的网络资源（即IP地址），还有为容器准备的rootfs等。</p>
 
 <p>waitForStart()函数通过container.monitor.Start来实现容器的启动，进入<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/monitor.go#L100">./docker/daemon/monitor.go#L100</a>，可以发现启动容器进程位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/monitor.go#L136">./docker/daemon/monitor.go#L136</a>，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    exitStatus, err = m.container.daemon.<span style="color:#c0f">Run</span>(m.container, pipes, m.callback) </code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    exitStatus, err = m.container.daemon.<span style="color:#c0f">Run</span>(m.container, pipes, m.callback) 
+</code></pre></div>
 <p>以上代码实际调用了daemon包中的Run函数，位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/daemon.go#L969-L971">./docker/daemon/daemon.go#L969-L971</a>，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (daemon <span style="color:#555">*</span>Daemon) <span style="color:#c0f">Run</span>(c <span style="color:#555">*</span>Container, pipes <span style="color:#555">*</span>execdriver.Pipes, startCallback execdriver.StartCallback) (<span style="color:#078;font-weight:bold">int</span>, <span style="color:#078;font-weight:bold">error</span>) {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (daemon <span style="color:#555">*</span>Daemon) <span style="color:#c0f">Run</span>(c <span style="color:#555">*</span>Container, pipes <span style="color:#555">*</span>execdriver.Pipes, startCallback execdriver.StartCallback) (<span style="color:#078;font-weight:bold">int</span>, <span style="color:#078;font-weight:bold">error</span>) {
             <span style="color:#069;font-weight:bold">return</span> daemon.execDriver.<span style="color:#c0f">Run</span>(c.command, pipes, startCallback)
     }</code></pre></div>
 <p>最终，Run函数中调用了execdriver中的Run函数来执行Docker Container的启动命令。 至此，网络部分在Docker Daemon内部的执行已经结束，紧接着程序运行逻辑陷入execdriver，进一步完成容器启动的相关步骤。</p>
@@ -536,7 +539,8 @@
 <h3 id="3-1创建libcontainer的config对象"><strong>3.1创建libcontainer的Config对象</strong></h3>
 
 <p>Run函数位于./docker/daemon/execdriver/native/driver.go#L62-L168，进入Run函数的实现，立即可以发现该函数通过createContainer创建了一个container对象，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    container, err <span style="color:#555">:=</span> d.<span style="color:#c0f">createContainer</span>(c) </code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    container, err <span style="color:#555">:=</span> d.<span style="color:#c0f">createContainer</span>(c) 
+</code></pre></div>
 <p>其中c为Docker Daemon创建的execdriver.Command类型实例。以上代码的createContainer函数的作用是：使用execdriver.Command来填充libcontainer.Config。 libcontainer.Config的作用是，定义在一个容器化的环境中执行一个进程所需要的所有配置项。createContainer函数的存在，使用Docker Daemon层创建的execdriver.Command，创建更下层libcontainer所需要的Config对象。这个角度来看，execdriver更像是封装了libcontainer对外的接口，实现了将Docker Daemon认识的容器启动信息转换为底层libcontainer能真正使用的容器启动配置选项。libcontainer.Config类型与其内部对象的关联图如下：
 <center>
 <img src="https://res.cloudinary.com/rachel725/image/upload/v1605616369/sel/CONTAINER7_anm6gp.jpg" alt="" style="zoom:60%;" />
@@ -545,7 +549,7 @@
 <p>图3.2 libcontainer.Config类型关系图</p>
 
 <p>进入createContainer的源码实现部分，位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/execdriver/native/create.go#L23-L77">./docker/daemon/execdriver/native/create.go#L23-L77</a>，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (d <span style="color:#555">*</span>driver) <span style="color:#c0f">createContainer</span>(c <span style="color:#555">*</span>execdriver.Command) (<span style="color:#555">*</span>libcontainer.Config, <span style="color:#078;font-weight:bold">error</span>) {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (d <span style="color:#555">*</span>driver) <span style="color:#c0f">createContainer</span>(c <span style="color:#555">*</span>execdriver.Command) (<span style="color:#555">*</span>libcontainer.Config, <span style="color:#078;font-weight:bold">error</span>) {
         container <span style="color:#555">:=</span> template.<span style="color:#c0f">New</span>()
         <span style="color:#a00;background-color:#faa">……</span>
         <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> d.<span style="color:#c0f">createNetwork</span>(container, c); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
@@ -557,7 +561,7 @@
 <h4 id="3-1-1-libcontainer-config模板实例"><strong>3.1.1 libcontainer.Config模板实例</strong></h4>
 
 <p>从createContainer函数的实现以及execdriver.Run执行流程图中都可以看到，createContainer所做的第一个操作就是即为执行template.New()，意为创建一个libcontainer.Config的实例container。其中，template.New()的定义位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/execdriver/native/template/default_template.go">./docker/daemon/execdriver/native/template/default_template.go</a>，主要的作用为返回libcontainer关于Docker Container的默认配置选项。 Template.New()的代码实现如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">New</span>() <span style="color:#555">*</span>libcontainer.Config {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">New</span>() <span style="color:#555">*</span>libcontainer.Config {
         container <span style="color:#555">:=</span> <span style="color:#555">&amp;</span>libcontainer.Config{
             Capabilities: []<span style="color:#078;font-weight:bold">string</span>{
                 <span style="color:#c30">&#34;CHOWN&#34;</span>,
@@ -600,19 +604,19 @@
 <h4 id="3-1-2-createnetwork实现"><strong>3.1.2 createNetwork实现</strong></h4>
 
 <p>在createContainer的实现流程中，为了完成container对象（类型为libcontainer.Config）的完善，最后有很多步骤，如与网络相关的createNetwork函数调用，与Linux内核Capabilities相关的setCapabilities函数调用，与cgroups相关的setupCgroups函数调用，以及与挂载目录相关的setupMounts函数调用等。本小节主要分析createNetwork如何为container对象完善网络配置项。 createNetwork函数的定义位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/execdriver/native/create.go#L79-L124">./docker/daemon/execdriver/native/create.go#L79-L124</a>，该函数主要利用execdriver.Command中Network属性中的内容，来判断如何创建libcontainer.Config中Network属性（关于两中Network属性，可以参见图3.1和图3.2）。由于Docker Container的4种网络模式彼此互斥，故以上Network类型中Interface、ContainerID与HostNetworking最多只有一项会被赋值。 由于execdriver.Command中Network的类型定义如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> Network <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> Network <span style="color:#069;font-weight:bold">struct</span> {
         Interface      <span style="color:#555">*</span>NetworkInterface
         Mtu            <span style="color:#078;font-weight:bold">int</span>              
         ContainerID    <span style="color:#078;font-weight:bold">string</span>            
         HostNetworking <span style="color:#078;font-weight:bold">bool</span>             
     }</code></pre></div>
 <p>分析createNetwork函数，其具体实现可以归纳为4部分内容： (1) 判断网络是否为host模式； (2) 判断是否为bridge桥接模式； (3) 判断是否为other container模式； (4) 为Docker Container添加loopback网络设备。 首先来看execdriver判断是否为host模式的代码：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> c.Network.HostNetworking {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> c.Network.HostNetworking {
         container.Namespaces[<span style="color:#c30">&#34;NEWNET&#34;</span>] = <span style="color:#069;font-weight:bold">false</span>
         <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">nil</span>
     }</code></pre></div>
 <p>当execdriver.Command类型实例中Network属性的HostNetworking为true，则说明需要为Docker Container创建host网络模式，使得容器与宿主机共享同样的网络命名空间。关于host模式的具体介绍中，已经阐明，只须在创建进程进行CLONE系统调用时，不传入CLONE_NEWNET参数标志即可实现。这里的代码正好准确的验证了这一点，将container对象中NEWNET的Namespace设为false，最终在libcontainer中可以达到效果。 再看execdriver判断是否为bridge桥接模式的代码：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> c.Network.Interface <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> c.Network.Interface <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
             vethNetwork <span style="color:#555">:=</span> libcontainer.Network{
                 Mtu:        c.Network.Mtu,
                 Address:    fmt.<span style="color:#c0f">Sprintf</span>(<span style="color:#c30">&#34;%s/%d&#34;</span>, c.Network.Interface.IPAddress, 
@@ -625,7 +629,7 @@
             container.Networks = <span style="color:#366">append</span>(container.Networks, <span style="color:#555">&amp;</span>vethNetwork)
         }</code></pre></div>
 <p>当execdriver.Command类型实例中Network属性的Interface不为nil值，则说明需要为Docker Container创建bridge桥接模式，使得容器使用隔离的网络环境。于是这里为类型为libcontainer.Config的container对象添加Networks属性vethNetwork，网络类型为“veth”，以便libcontainer在执行时，可以为Docker Container创建veth pair。 接着来看execdriver判断是否为other container模式的代码：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> c.Network.ContainerID <span style="color:#555">!=</span> <span style="color:#c30">&#34;&#34;</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> c.Network.ContainerID <span style="color:#555">!=</span> <span style="color:#c30">&#34;&#34;</span> {
             d.<span style="color:#c0f">Lock</span>()
             active <span style="color:#555">:=</span> d.activeContainers[c.Network.ContainerID]
             d.<span style="color:#c0f">Unlock</span>()
@@ -642,7 +646,7 @@
             })
         }</code></pre></div>
 <p>当execdriver.Command类型实例中Network属性的ContainerID不为空字符串时，则说明需要为Docker Container创建other container模式，使得创建容器使用其他容器的网络环境。实现过程中，execdriver需要首先在activeContainers中查找需要被共享网络环境的容器active；并通过active容器的启动执行命令cmd找到容器第一进程在宿主机上的PID；随后在proc文件系统中找到该进程PID的关于网络namespace的路径nspath；最后为类型为libcontainer.Config的container对象添加Networks属性，Network的类型为“netns”。 此外，createNetwork函数还实现为Docker Container创建一个loopback回环设备，以便容器可以实现内部通信。实现过程中，同样为类型libcontainer.Config的container对象添加Networks属性，Network的类型为“loopback”，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    container.Networks = []<span style="color:#555">*</span>libcontainer.Network{
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    container.Networks = []<span style="color:#555">*</span>libcontainer.Network{
             {
                 Mtu:     c.Network.Mtu,
                 Address: fmt.<span style="color:#c0f">Sprintf</span>(<span style="color:#c30">&#34;%s/%d&#34;</span>, <span style="color:#c30">&#34;127.0.0.1&#34;</span>, <span style="color:#f60">0</span>),
@@ -655,10 +659,10 @@
 <h3 id="3-2-调用libcontainer的namespaces启动容器"><strong>3.2 调用libcontainer的namespaces启动容器</strong></h3>
 
 <p>回到execdriver.Run函数，创建完libcontainer.Config实例container，经过一系列其他方面的处理之后，最终execdriver执行namespaces.Exec函数实现启动容器，container对象依然是namespace.Exec函数中一个非常重要的参数。这一环节代表着execdriver把启动Docker Container的工作交给libcontainer，以后的执行陷入libcontainer。 调用namespaces.Exec的代码位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/execdriver/native/driver.go#L102-L127">./docker/daemon/execdriver/native/driver.go#L102-L127</a>，为了便于理解，简化的代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    namespaces.<span style="color:#c0f">Exec</span>(container, c.Stdin, c.Stdout, c.Stderr, c.Console,
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    namespaces.<span style="color:#c0f">Exec</span>(container, c.Stdin, c.Stdout, c.Stderr, c.Console,
     c.Rootfs, dataPath, args, parameter_1, parameter_2)</code></pre></div>
 <p>其中parameter_1为定义的函数，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span>(container <span style="color:#555">*</span>libcontainer.Config, console, rootfs, dataPath, 
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span>(container <span style="color:#555">*</span>libcontainer.Config, console, rootfs, dataPath, 
     init <span style="color:#078;font-weight:bold">string</span>, child <span style="color:#555">*</span>os.File, args []<span style="color:#078;font-weight:bold">string</span>) <span style="color:#555">*</span>exec.Cmd {
             c.Path = d.initPath
             c.Args = <span style="color:#366">append</span>([]<span style="color:#078;font-weight:bold">string</span>{
@@ -681,7 +685,7 @@
             <span style="color:#069;font-weight:bold">return</span> <span style="color:#555">&amp;</span>c.Cmd
         }</code></pre></div>
 <p>同样的，parameter_2也为定义的函数，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span>() {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span>() {
             <span style="color:#069;font-weight:bold">if</span> startCallback <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
                 c.ContainerPid = c.Process.Pid
                 <span style="color:#c0f">startCallback</span>(c)
@@ -698,7 +702,7 @@
 <h3 id="4-1创建exec-cmd"><strong>4.1创建exec.Cmd</strong></h3>
 
 <p>提到exec.Cmd，就不得不提Go语言标准库中的包os以及包os/exec。前者提供了与平台无关的操作系统功能集，后者则提供了功能集里与命令执行相关的部分。 首先来看一下在Go语言中exec.Cmd的定义，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> Cmd <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> Cmd <span style="color:#069;font-weight:bold">struct</span> {
             Path <span style="color:#078;font-weight:bold">string</span>                   <span style="color:#09f;font-style:italic">//所需执行命令在系统中的路径
 </span><span style="color:#09f;font-style:italic"></span>            Args []<span style="color:#078;font-weight:bold">string</span>                  <span style="color:#09f;font-style:italic">//传入命令的参数
 </span><span style="color:#09f;font-style:italic"></span>            Env []<span style="color:#078;font-weight:bold">string</span>                   <span style="color:#09f;font-style:italic">//进程运行时的环境变量
@@ -712,10 +716,11 @@
 </span><span style="color:#09f;font-style:italic"></span>            ProcessState <span style="color:#555">*</span>os.ProcessState    <span style="color:#09f;font-style:italic">//进程退出后保留的信息
 </span><span style="color:#09f;font-style:italic"></span>    }</code></pre></div>
 <p>清楚Cmd的定义之后，再来分析namespaces包的Exec函数中，是如何来创建exec.Cmd的。在Exec函数的实现过程中，使用了以下代码实现Exec.Cmd的创建：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    command <span style="color:#555">:=</span> <span style="color:#c0f">createCommand</span>(container, console, rootfs, dataPath, 
-    os.Args[<span style="color:#f60">0</span>], syncPipe.<span style="color:#c0f">Child</span>(), args) </code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    command <span style="color:#555">:=</span> <span style="color:#c0f">createCommand</span>(container, console, rootfs, dataPath, 
+    os.Args[<span style="color:#f60">0</span>], syncPipe.<span style="color:#c0f">Child</span>(), args) 
+</code></pre></div>
 <p>其中createCommand为namespace.Exec函数中传入的倒数第二个参数，类型为CreateCommand。而createCommand只是namespaces.Exec函数的形参，真正的实参则为execdriver调用namespaces.Exec时的参数parameter_1，即如下代码：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span>(container <span style="color:#555">*</span>libcontainer.Config, console, rootfs, dataPath,
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span>(container <span style="color:#555">*</span>libcontainer.Config, console, rootfs, dataPath,
     init <span style="color:#078;font-weight:bold">string</span>, child <span style="color:#555">*</span>os.File, args []<span style="color:#078;font-weight:bold">string</span>) <span style="color:#555">*</span>exec.Cmd {
             c.Path = d.initPath
             c.Args = <span style="color:#366">append</span>([]<span style="color:#078;font-weight:bold">string</span>{
@@ -738,7 +743,7 @@
             <span style="color:#069;font-weight:bold">return</span> <span style="color:#555">&amp;</span>c.Cmd
         }</code></pre></div>
 <p>熟悉exec.Cmd的定义之后，分析以上代码的实现就显得较为简单。为Cmd赋值的对象有Path，Args，SysProcAttr，ExtraFiles，Env和Dir。其中需要特别注意的是Path的值d.initPath，该路径下存放的是dockerinit的二进制文件，Docker 1.2.0版本下，路径一般为“/var/lib/docker/init/dockerinit-1.2.0”。另外SysProcAttr使用以下的代码来赋值：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#555">&amp;</span>syscall.SysProcAttr{
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#555">&amp;</span>syscall.SysProcAttr{
             Cloneflags: <span style="color:#366">uintptr</span>(namespaces.<span style="color:#c0f">GetNamespaceFlags</span>(container.Namespaces)),
         }</code></pre></div>
 <p>syscall.SysProAttr对象中的Cloneflags属性中，即保留了libcontainer.Config类型的实例container中的Namespace属性。换言之，通过exec.Cmd创建进程时，正是通过Cloneflags实现Clone系统调用中传入namespace参数标志。 回到函数执行中，在函数的最后返回了c.Cmd，命令创建完毕。</p>
@@ -746,7 +751,7 @@
 <h3 id="4-2启动exec-cmd创建进程"><strong>4.2启动exec.Cmd创建进程</strong></h3>
 
 <p>创建完exec.Cmd，当然需要将该执行命令运行起来，namespaces.Exec函数中直接使用以下代码实现进程的启动：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> command.<span style="color:#c0f">Start</span>(); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> command.<span style="color:#c0f">Start</span>(); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
             <span style="color:#069;font-weight:bold">return</span> <span style="color:#555">-</span><span style="color:#f60">1</span>, err
         }</code></pre></div>
 <p>这一部分的内容简单直接， Start()函数用以完成指定命令exec.Cmd的启动执行，同时并不等待其启动完毕便返回。Start()函数的定义位于os/exec包。 进入os/exec包，查看Start()函数的实现，可以看到执行过程中，会对command.Process进行赋值，此时command.Process中会含有刚才启动进程的PID进程号，该PID号属于在宿主机pid namespace下，而并非是新创建namespace下的PID号。</p>
@@ -754,13 +759,13 @@
 <h3 id="4-3为容器进程初始化网络环境"><strong>4.3为容器进程初始化网络环境</strong></h3>
 
 <p>上一环节实现了容器进程的启动，然而却还没有为之配置相应的网络环境。namespaces.Exec在之后的InitializeNetworing中实现了为容器进程初始化网络环境。初始化网络环境需要两个非常重要的参数：container对象以及容器进程的Pid号。类型为libcontainer.Config的实例container中包含用户对Docker Container的网络配置需求，另外容器进程的Pid可以使得创建的网络环境与进程新创建的namespace进行关联。 namespaces.Exec中为容器进程初始化网络环境的代码实现位于<a href="https://github.com/docker/libcontainer/blob/v1.2.0/namespaces/exec.go#L75-L79">./libcontainer/namespaces/exec.go#L75-L79</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> <span style="color:#c0f">InitializeNetworking</span>(container, command.Process.Pid, syncPipe, <span style="color:#555">&amp;</span>networkState); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> <span style="color:#c0f">InitializeNetworking</span>(container, command.Process.Pid, syncPipe, <span style="color:#555">&amp;</span>networkState); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
             command.Process.<span style="color:#c0f">Kill</span>()
             command.<span style="color:#c0f">Wait</span>()
             <span style="color:#069;font-weight:bold">return</span> <span style="color:#555">-</span><span style="color:#f60">1</span>, err
         }</code></pre></div>
 <p>InitializeNetworing的作用很明显，即为创建的容器进程初始化网络环境。更为底层的实现包含两个步骤： (1) 先在容器进程的namespace外部，创建容器所需的网络栈； (2) 将创建的网络栈迁移进入容器的net namespace。 IntializeNetworking的源代码实现位于<a href="https://github.com/docker/libcontainer/blob/v1.2.0/namespaces/exec.go#L176-L187">./libcontainer/namespaces/exec.go#L176-L187</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">InitializeNetworking</span>(container <span style="color:#555">*</span>libcontainer.Config, nspid <span style="color:#078;font-weight:bold">int</span>, pipe <span style="color:#555">*</span>syncpipe.SyncPipe, networkState <span style="color:#555">*</span>network.NetworkState) <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">InitializeNetworking</span>(container <span style="color:#555">*</span>libcontainer.Config, nspid <span style="color:#078;font-weight:bold">int</span>, pipe <span style="color:#555">*</span>syncpipe.SyncPipe, networkState <span style="color:#555">*</span>network.NetworkState) <span style="color:#078;font-weight:bold">error</span> {
         <span style="color:#069;font-weight:bold">for</span> _, config <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">range</span> container.Networks {
             strategy, err <span style="color:#555">:=</span> network.<span style="color:#c0f">GetStrategy</span>(config.Type)
             <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
@@ -777,7 +782,7 @@
 <h4 id="4-3-1-loopback网络栈的创建"><strong>4.3.1 loopback网络栈的创建</strong></h4>
 
 <p>Loopback是一种本地环回设备，libcontainer创建loopback网络设备的实现代码位于<a href="https://github.com/docker/libcontainer/blob/v1.2.0/network/loopback.go#L13-L15">./libcontainer/network/loopback.go#L13-L1</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (l <span style="color:#555">*</span>Loopback) <span style="color:#c0f">Create</span>(n <span style="color:#555">*</span>Network, nspid <span style="color:#078;font-weight:bold">int</span>, networkState <span style="color:#555">*</span>NetworkState) <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (l <span style="color:#555">*</span>Loopback) <span style="color:#c0f">Create</span>(n <span style="color:#555">*</span>Network, nspid <span style="color:#078;font-weight:bold">int</span>, networkState <span style="color:#555">*</span>NetworkState) <span style="color:#078;font-weight:bold">error</span> {
             <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">nil</span>
     }</code></pre></div>
 <p>令人费解的是，libcontainer在loopback设备的创建函数Create中，并没有作实质性的内容，而是直接返回nil。 其实关于loopback设备的创建，要回到Linux内核为进程新建namespace的阶段。当libcontainer执行command.Start()时，由于创建了一个新的网络namespace，故Linux内核会自动为新的net namespace创建loopback设备。当Linux内核创建完loopback设备之后，libcontainer所做的工作即只要保留loopback设备的默认配置，并在Initialize函数中实现启动该设备。</p>
@@ -785,7 +790,7 @@
 <h4 id="4-3-2-veth网络栈的创建"><strong>4.3.2 veth网络栈的创建</strong></h4>
 
 <p>Veth是Docker Container实际使用的网络策略之一，其使用网桥docker0并创建veth pair虚拟网络设备对，最终使一个veth配置在宿主机上，而另一个veth安置在容器网络namespace内部。 libcontainer中实现veth策略的代码非常通俗易懂，代码位于<a href="https://github.com/docker/libcontainer/blob/v1.2.0/network/veth.go#L19-L50">./libcontainer/network/veth.go#L19-L50</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    name1, name2, err <span style="color:#555">:=</span> <span style="color:#c0f">createVethPair</span>(prefix)
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    name1, name2, err <span style="color:#555">:=</span> <span style="color:#c0f">createVethPair</span>(prefix)
         <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
             <span style="color:#069;font-weight:bold">return</span> err
         }
@@ -806,7 +811,7 @@
 <h4 id="4-3-3-netns网络栈的创建"><strong>4.3.3 netns网络栈的创建</strong></h4>
 
 <p>netns专门为Docker Container的other container网络模式服务。netns完成的工作是将其他容器的namespace路径传递给需要创建other container网络模式的容器使用。 libcontainer中实现netns策略的代码位于<a href="https://github.com/docker/libcontainer/blob/v1.2.0/network/netns.go#L17-L20">./libcontainer/network/netns.go#L17-L20</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (v <span style="color:#555">*</span>NetNS) <span style="color:#c0f">Create</span>(n <span style="color:#555">*</span>Network, nspid <span style="color:#078;font-weight:bold">int</span>, networkState <span style="color:#555">*</span>NetworkState) <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (v <span style="color:#555">*</span>NetNS) <span style="color:#c0f">Create</span>(n <span style="color:#555">*</span>Network, nspid <span style="color:#078;font-weight:bold">int</span>, networkState <span style="color:#555">*</span>NetworkState) <span style="color:#078;font-weight:bold">error</span> {
             networkState.NsPath = n.NsPath
             <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">nil</span>
     }</code></pre></div>

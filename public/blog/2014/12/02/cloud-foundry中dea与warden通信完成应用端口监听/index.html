@@ -18,7 +18,7 @@
   
   <meta name="description" content="在Cloud Foundry v2版本中，DEA为一个用户应用运行的控制模块，而应用的真正运行都是依附于warden。更具体的来说，是DEA接收到Cloud Controller的请求；DEA发送请求给warden server；warden server创建warden container并将用户应用droplet等环境配置好；DEA发送应用启动请求至warden serve；最后warden container执行启动脚本启动应用。本文主要具体描述，DEA如何与warden交互，以保证最终用户的应用可以成功绑定某一个端口，实现用户应用对外提供服务。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -219,7 +219,7 @@
 <p>本文主要具体描述，DEA如何与warden交互，以保证最终用户的应用可以成功绑定某一个端口，实现用户应用对外提供服务。</p>
 
 <p>DEA在执行启动一个应用的时候，主要做到以下这些部分：promise_droplet, promise_container, 其中这两个部分并发完成；promise_extract_droplet, promise_exec_hook_script(“before_start”), promise_start等。代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#555">[</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#555">[</span>  
       promise_droplet,  
       promise_container  
     <span style="color:#555">].</span>each(<span style="color:#555">&amp;</span><span style="color:#fc3">:run</span>)<span style="color:#555">.</span>each(<span style="color:#555">&amp;</span><span style="color:#fc3">:resolve</span>)  
@@ -236,7 +236,7 @@
 <h2 id="promise-container"><strong>promise_container:</strong></h2>
 
 <p>该环节的工作主要完成创建一个warden container，随后可以为应用的运行提供一个合适的环境。promise_container的源码实现如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">promise_container</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">promise_container</span>  
         <span style="color:#360">Promise</span><span style="color:#555">.</span>new <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span><span style="color:#366">p</span><span style="color:#555">|</span>
         bind_mounts <span style="color:#555">=</span> <span style="color:#555">[</span>{<span style="color:#c30">&#39;src_path&#39;</span> <span style="color:#555">=&gt;</span> droplet<span style="color:#555">.</span>droplet_dirname, <span style="color:#c30">&#39;dst_path&#39;</span> <span style="color:#555">=&gt;</span> droplet<span style="color:#555">.</span>droplet_dirname}<span style="color:#555">]</span>  
         with_network <span style="color:#555">=</span> <span style="color:#069">true</span>  
@@ -276,7 +276,7 @@
 </ul>
 
 <p>其中setup_network一直设置为true。 在container.create_container的方法实现中，有以下的方法，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">create_container</span>(params)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">create_container</span>(params)  
         <span style="color:#555">[</span><span style="color:#fc3">:bind_mounts</span>, <span style="color:#fc3">:limit_cpu</span>, <span style="color:#fc3">:byte</span>, <span style="color:#fc3">:inode</span>, <span style="color:#fc3">:limit_memory</span>, <span style="color:#fc3">:setup_network</span><span style="color:#555">].</span>each <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>param<span style="color:#555">|</span>  
           <span style="color:#069;font-weight:bold">raise</span> <span style="color:#360">ArgumentError</span>, <span style="color:#c30">&#34;expecting </span><span style="color:#a00">#{</span>param<span style="color:#555">.</span>to_s<span style="color:#a00">}</span><span style="color:#c30"> parameter to createdef create_container(params)  
 </span><span style="color:#c30">        [:bind_mounts, :limit_cpu, :byte, :inode, :limit_memory, :setup_network].each do |param|  
@@ -302,7 +302,7 @@
 </span><span style="color:#c30">      end  
 </span><span style="color:#c30">    end  </span></code></pre></div>
 <p>主要关注一下setup_network方法，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">setup_network</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">setup_network</span>  
         request <span style="color:#555">=</span> <span style="color:#555">::</span><span style="color:#360">Warden</span><span style="color:#555">::</span><span style="color:#360">Protocol</span><span style="color:#555">::</span><span style="color:#360">NetInRequest</span><span style="color:#555">.</span>new(<span style="color:#fc3">handle</span>: handle)  
         response <span style="color:#555">=</span> call(<span style="color:#fc3">:app</span>, request)  
         network_ports<span style="color:#555">[</span><span style="color:#c30">&#39;host_port&#39;</span><span style="color:#555">]</span> <span style="color:#555">=</span> response<span style="color:#555">.</span>host_port  
@@ -315,9 +315,9 @@
     
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>从代码中可以看到，在setup_network中，主要完成了两次NetIn操作。对于NetIn操作，需要说明的是，完成的工作是将host主机上的端口映射到container内部的端口。换言之，将host_ip:port1映射到container_ip:port2，也就是说如果container在container_ip上监听的是端口port2，则host机器外部的请求访问host机器，并且端口为port1的时候，host的内核网络栈，会将请求转发给container的port2端口，其中使用的协议为DNAT协议。 因此，在以上的代码中实现了两次NetIn操作，也就是说将container的两个端口映射到了host宿主机，第一个端口用于container内应用的正常占用端口，第二个端口是用来为应用的console功能做服务。虽然container也分配了第二个端口，但是在而后的应用启动等中，该console_port都没有使用过，可见Cloud Foundry在这里只是预留了接口，但是没有真正利用起来。 以上主要描述了NetIn的功能，以下进入NetIn操作的源码实现。NetIn的源码实现，主要为warden server的部分。其中，是由DEA进程通过warden.sock和warden server建立通信，随后DEA进程发送NetIn请求给warden server，warden server最终处理该请求。 现在进入warden范畴，研究warden如何接收请求，并实现端口的映射。 在warden/lib/warden/server.rb中，大部分代码都是为了完成warden server的运行，在run！方法中，可以看到warden server另外还启动了一个unix domain server，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    server <span style="color:#555">=</span> <span style="color:#555">::</span><span style="color:#360">EM</span><span style="color:#555">.</span>start_unix_domain_server(unix_domain_path, <span style="color:#360">ClientConnection</span>)  </code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    server <span style="color:#555">=</span> <span style="color:#555">::</span><span style="color:#360">EM</span><span style="color:#555">.</span>start_unix_domain_server(unix_domain_path, <span style="color:#360">ClientConnection</span>)  </code></pre></div>
 <p>也就是说，warden server会通过整个unix domain server接收从DEA进程发送来的关于warden container的一系列请求，在ClientConnection类中定义，关于这部分请求如何处理的方法。 当unix domain server中ClientConnection类通过receive_data（data）方法来实现接收请求，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">receive_data</span>(data)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">receive_data</span>(data)  
       @buffer <span style="color:#555">&lt;&lt;</span> data  
       @buffer<span style="color:#555">.</span>each_request <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>request<span style="color:#555">|</span>  
         <span style="color:#069;font-weight:bold">begin</span>  
@@ -330,7 +330,7 @@
       <span style="color:#069;font-weight:bold">end</span>  
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>从代码中可以看到，当buffer中有请求的时候，通过receive_request（request）方法来进一步提取请求。再进入receive_request(request)方法中，可以看到通过process（request）来处理请求。 接着进入真正请求处理的部分，也就时process（request）的实现：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process</span>(request)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process</span>(request)  
         <span style="color:#069;font-weight:bold">case</span> request  
         <span style="color:#069;font-weight:bold">when</span> <span style="color:#360">Protocol</span><span style="color:#555">::</span><span style="color:#360">PingRequest</span>  
           response <span style="color:#555">=</span> request<span style="color:#555">.</span>create_response  
@@ -367,17 +367,17 @@
         send_error(e)  
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>可见，在warden server中，请求类型可以简单分为5种：PingRequest, ListRequest, EchoRequest, CreateRequest和其他请求，像NetIn请求则属于其他请求中的一种，程序执行进入case语句块的else分支，也就是：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">if</span> request<span style="color:#555">.</span>respond_to?(<span style="color:#fc3">:handle</span>)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">if</span> request<span style="color:#555">.</span>respond_to?(<span style="color:#fc3">:handle</span>)  
   container <span style="color:#555">=</span> find_container(request<span style="color:#555">.</span>handle)  
   process_container_request(request, container)  
 <span style="color:#069;font-weight:bold">else</span>  
   <span style="color:#069;font-weight:bold">raise</span> <span style="color:#360">WardenError</span><span style="color:#555">.</span>new(<span style="color:#c30">&#34;Unknown request: </span><span style="color:#a00">#{</span>request<span style="color:#555">.</span>class<span style="color:#555">.</span>name<span style="color:#555">.</span>split(<span style="color:#c30">&#34;::&#34;</span>)<span style="color:#555">.</span>last<span style="color:#a00">}</span><span style="color:#c30">&#34;</span>)  
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>代码清晰可见，warden server首先通过handle找到具体是给哪一个warden container发送请求，然后调用process_container_request(request, container)方法。进入process_container_request(request, container)方法可以看到：加入请求类型不为StopRequest以及StreamRequest，则进入case语句块的else分支，执行代码：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">response <span style="color:#555">=</span> container<span style="color:#555">.</span>dispatch(request)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">response <span style="color:#555">=</span> container<span style="color:#555">.</span>dispatch(request)  
      send_response(response)  </code></pre></div>
 <p>可以看到，是调用了container.dispatch（request）方法才返回了response。 以下进入warden/lib/warden/container/base.rb文件中，该文件的dispatch方法主要实现了warden server接收到请求并预处理之后，如何分发执行具体的请求，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">dispatch</span>(request, <span style="color:#555">&amp;</span>blk)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">dispatch</span>(request, <span style="color:#555">&amp;</span>blk)  
         klass_name <span style="color:#555">=</span> request<span style="color:#555">.</span>class<span style="color:#555">.</span>name<span style="color:#555">.</span>split(<span style="color:#c30">&#34;::&#34;</span>)<span style="color:#555">.</span>last  
         klass_name <span style="color:#555">=</span> klass_name<span style="color:#555">.</span>gsub(<span style="color:#3aa">/Request$/</span>, <span style="color:#c30">&#34;&#34;</span>)  
         klass_name <span style="color:#555">=</span> klass_name<span style="color:#555">.</span>gsub(<span style="color:#3aa">/(.)([A-Z])/</span>) { <span style="color:#555">|</span>m<span style="color:#555">|</span> <span style="color:#c30">&#34;</span><span style="color:#a00">#{</span>m<span style="color:#555">[</span><span style="color:#f60">0</span><span style="color:#555">]</span><span style="color:#a00">}</span><span style="color:#c30">_</span><span style="color:#a00">#{</span>m<span style="color:#555">[</span><span style="color:#f60">1</span><span style="color:#555">]</span><span style="color:#a00">}</span><span style="color:#c30">&#34;</span> }  
@@ -443,7 +443,7 @@
 <p>首先提取出请求的类型名，如果是NetIn请求的话，提取出来的请求的类型名称为net_in，随后构建出方法明do_method，也就是do_net_in，接着就通过send(do_method, request, response, &amp;blk)方法，将参数发送给do_net_in方法。</p>
 
 <p>现在就是进入warden/lib/warden/container/features/net.rb文件中, do_net_in方法实现如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">do_net_in</span>(request, response)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">do_net_in</span>(request, response)  
         <span style="color:#069;font-weight:bold">if</span> request<span style="color:#555">.</span>host_port<span style="color:#555">.</span>nil?  
           host_port <span style="color:#555">=</span> <span style="color:#366">self</span><span style="color:#555">.</span>class<span style="color:#555">.</span>port_pool<span style="color:#555">.</span>acquire  
     
@@ -470,14 +470,14 @@
       <span style="color:#069;font-weight:bold">raise</span>  
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>可见，如果请求端口没有指定的话，那么就使用代码host_port = self.class.port_pool.acquire来获取端口号，默认情况下，container端口号与host端口号保持一致，有了这两个端口号之后，执行代码_net_in(host_port, container_port)， 真正实现端口映射，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">_net_in</span>(host_port, container_port)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">_net_in</span>(host_port, container_port)  
       sh <span style="color:#360">File</span><span style="color:#555">.</span>join(container_path, <span style="color:#c30">&#34;net.sh&#34;</span>), <span style="color:#c30">&#34;in&#34;</span>, <span style="color:#fc3">:env</span> <span style="color:#555">=&gt;</span> {  
         <span style="color:#c30">&#34;HOST_PORT&#34;</span>      <span style="color:#555">=&gt;</span> host_port,  
         <span style="color:#c30">&#34;CONTAINER_PORT&#34;</span> <span style="color:#555">=&gt;</span> container_port,  
       }  
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>可以清晰的看到是，使用了容器内部的net.sh脚本来实现端口映射。现在进入warden/root/linux/skeleton/net.sh脚本，进入参数为in的执行部分：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#c30">&#34;in&#34;</span>)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#c30">&#34;in&#34;</span>)  
         <span style="color:#069;font-weight:bold">if</span> <span style="color:#555">[</span> <span style="color:#555">-</span>z <span style="color:#c30">&#34;${HOST_PORT:-}&#34;</span> <span style="color:#555">]</span>; <span style="color:#069;font-weight:bold">then</span>  
             echo <span style="color:#c30">&#34;Please specify HOST_PORT...&#34;</span> <span style="color:#f60">1</span><span style="color:#555">&gt;&amp;</span><span style="color:#f60">2</span>  
             <span style="color:#366">exit</span> <span style="color:#f60">1</span>  
@@ -498,7 +498,7 @@
 <h2 id="promise-extract-droplet"><strong>promise_extract_droplet:</strong></h2>
 
 <p>该环节主要完成的是让container运行脚本，使得container容器将位于host主机的droplet文件，解压至container内部，代码内容如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">promise_extract_droplet</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    <span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">promise_extract_droplet</span>  
         <span style="color:#360">Promise</span><span style="color:#555">.</span>new <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span><span style="color:#366">p</span><span style="color:#555">|</span>  
           script <span style="color:#555">=</span> <span style="color:#c30">&#34;cd /home/vcap/ &amp;&amp; tar zxf </span><span style="color:#a00">#{</span>droplet<span style="color:#555">.</span>droplet_path<span style="color:#a00">}</span><span style="color:#c30">&#34;</span>  
           container<span style="color:#555">.</span>run_script(<span style="color:#fc3">:app</span>, script)  

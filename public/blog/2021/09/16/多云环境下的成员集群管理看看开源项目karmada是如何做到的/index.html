@@ -18,7 +18,7 @@
   
   <meta name="description" content="karmada是华为开源的云原生多云容器编排平台，目标是让开发者像使用单个k8s集群一样使用多k8s云。本文描述在多云环境下karmada如何管理成员集群，包括：成员集群的注册、注销，以及成员集群的状态跟踪两个方面。使用的karmada版本为v0.8.0后的commit：0cdba3efa。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -239,19 +239,19 @@
 <h3 id="1-1-push模式成员集群的注册流程-join">1.1. push模式成员集群的注册流程（join）</h3>
 
 <p>karmadactl的join命令将k8s集群以push模式注册到karmada集群联邦中。如下面的例子将一个k8s集群注册到karmada联邦，其中<code>member1</code>是<code>$HOME/.kube/karmada.config</code>中该集群的context名称，也是该集群成功加入联邦后在karmada控制面中的名称。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">karmadactl join member1 --cluster-kubeconfig<span style="color:#555">=</span><span style="color:#033">$HOME</span>/.kube/karmada.config</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">karmadactl join member1 --cluster-kubeconfig<span style="color:#555">=</span><span style="color:#033">$HOME</span>/.kube/karmada.config</code></pre></div>
 <p>karmadactl的<code>JoinCluster</code>方法实现了join命令，流程如下：</p>
 
 <p>首先，karmadactl确保<code>karmada-cluster</code> namespace在karmada控制面上已经创建。该namespace用来保存lease对象，lease对象被用来辅助集群状态的跟踪，在后续2.1-2.2小节中描述。</p>
 
 <p>然后，karmadactl在<code>member1</code>集群中创建service account，并为该service account配置cluster role和cluster role binding。这个service account令karmada控制面有权将应用资源对象下发到成员集群，并有权访问成员集群apiserver的<code>/readyz</code>或<code>/healthz</code> URL，从而判断成员集群的健康状态。在<code>member1</code>集群中执行<code>kubectl get sa karmada-member1 -n=karmada-cluster -o yaml --context=member1</code>可以查看karmadactl在成员集群<code>member1</code>中创建的service account内容：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ServiceAccount<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>karmada-member1<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>karmada-cluster<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">secrets</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>karmada-member1-token-bddfd</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ServiceAccount<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>karmada-member1<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>karmada-cluster<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">secrets</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>karmada-member1-token-bddfd</code></pre></div>
 <p>对该service account对象说明如下：</p>
 
 <ol>
@@ -261,33 +261,33 @@
 </ol>
 
 <p>执行<code>kubectl get clusterrole karmada-controller-manager:karmada-member1 -o yaml --context=member1</code>可以查看karmadactl在<code>member1</code>集群上创建的cluster role。可以看到该cluster role允许绑定的service account执行对所有类型资源的所有操作，同时授权访问<code>/readyz</code>和<code>/healthz</code>等所有非resource类型URL的get操作。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>rbac.authorization.k8s.io/v1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ClusterRole<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>karmada-controller-manager:karmada-member1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">rules</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span>- <span style="color:#069;font-weight:bold">apiGroups</span>:<span style="color:#bbb">
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>rbac.authorization.k8s.io/v1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ClusterRole<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>karmada-controller-manager:karmada-member1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">rules</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span>- <span style="color:#309;font-weight:bold">apiGroups</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">  </span>- <span style="color:#c30">&#39;*&#39;</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">resources</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">resources</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">  </span>- <span style="color:#c30">&#39;*&#39;</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">verbs</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">verbs</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">  </span>- <span style="color:#c30">&#39;*&#39;</span><span style="color:#bbb">
-</span><span style="color:#bbb"></span>- <span style="color:#069;font-weight:bold">nonResourceURLs</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span>- <span style="color:#309;font-weight:bold">nonResourceURLs</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">  </span>- <span style="color:#c30">&#39;*&#39;</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">verbs</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">verbs</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">  </span>- get</code></pre></div>
 <p>接着，karmadactl在karmada控制面中创建cluster对象，cluster对象是<code>member1</code>在karmada集群联邦中代表，执行<code>kubectl get cluster member1 -o yaml --context=karmada-apiserver</code>可以得如下yaml：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Cluster<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">finalizers</span>:<span style="color:#bbb">
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Cluster<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">finalizers</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">  </span>- karmada.io/cluster-controller<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">apiEndpoint</span>:<span style="color:#bbb"> </span>https://<span style="color:#f60">172.18.0.4</span>:<span style="color:#f60">6443</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">secretRef</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>karmada-cluster<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">syncMode</span>:<span style="color:#bbb"> </span>Push</code></pre></div>
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">apiEndpoint</span>:<span style="color:#bbb"> </span>https://172.18.0.4:6443<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">secretRef</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>karmada-cluster<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">syncMode</span>:<span style="color:#bbb"> </span>Push</code></pre></div>
 <p>cluster对象的几个重要的属性说明如下:</p>
 
 <ol>
@@ -304,9 +304,9 @@
 <p>pull模式的成员集群注册目前还在使用<code>hack/deploy-karmada-agent.sh</code>脚本，并没有集成到karmadactl中。</p>
 
 <p>用户可以执行如下命令将集群<code>member2</code>集群注册到karmada集群联邦中：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">hack/deploy-karmada-agent.sh ~/.kube/karmada.config karmada-apiserver ~/.kube/karmada.config member2</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">hack/deploy-karmada-agent.sh ~/.kube/karmada.config karmada-apiserver ~/.kube/karmada.config member2</code></pre></div>
 <p>上述命令完成后，执行<code>kubectl get cluster --context=karmada-apiserver</code>可以看到<code>member2</code>集群已经成功注册，且运行在pull模式：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">NAME      VERSION   MODE   READY   AGE
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">NAME      VERSION   MODE   READY   AGE
 member2   v1.19.1   Pull   True    32s</code></pre></div>
 <p><code>deploy-karmada-agent.sh</code>脚本注册成员集群的流程与karmadactl注册（join）命令的类似，流程如下：</p>
 
@@ -318,45 +318,45 @@ member2   v1.19.1   Pull   True    32s</code></pre></div>
 <li>在成员集群的<code>karmada-sytem</code> namespace中创建名为<code>karmada-kubeconfig</code>的secret，这个secret会被mount在下一步启动的karmada agent中，用来访问karmada控制面apiserver</li>
 
 <li><p>最后，在成员集群的<code>karmada-system</code> namespace中运行karmada agent，执行<code>kubectl get deploy karmada-agent -n=karmada-system --context=member2</code>可以查看karmada agent对应的deployment。在下面的yaml中我们可以看到karmada agent用来访问karmada apiserver的secret <code>karmada-kubeconfig</code>，以及用来访问成员集群的service account <code>karmada-agent-sa</code></p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>karmada-agent<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>karmada-agent<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>karmada-system<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">selector</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>karmada-agent<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">template</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">creationTimestamp</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">null</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>karmada-agent<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">containers</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">command</span>:<span style="color:#bbb">
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>karmada-agent<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>karmada-agent<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>karmada-system<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>karmada-agent<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">template</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">creationTimestamp</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">null</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>karmada-agent<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">containers</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">command</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>- /bin/karmada-agent<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>- --karmada-kubeconfig=/etc/kubeconfig/karmada-kubeconfig<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>- --karmada-context=karmada-apiserver<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>- --cluster-name=member2<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>- --cluster-status-update-frequency=10s<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- --v=<span style="color:#f60">4</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">image</span>:<span style="color:#bbb"> </span>swr.ap-southeast<span style="color:#f60">-1.</span>myhuaweicloud.com/karmada/karmada-agent:latest<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">imagePullPolicy</span>:<span style="color:#bbb"> </span>IfNotPresent<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>karmada-agent<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">volumeMounts</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span>/etc/kubeconfig<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>kubeconfig<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">serviceAccountName</span>:<span style="color:#bbb"> </span>karmada-agent-sa<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">tolerations</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">key</span>:<span style="color:#bbb"> </span>node-role.kubernetes.io/master<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">operator</span>:<span style="color:#bbb"> </span>Exists<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">volumes</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>kubeconfig<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">secret</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">secretName</span>:<span style="color:#bbb"> </span>karmada-kubeconfig</code></pre></div></li>
+</span><span style="color:#bbb">    </span>- --v=4<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">image</span>:<span style="color:#bbb"> </span>swr.ap-southeast-1.myhuaweicloud.com/karmada/karmada-agent:latest<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">imagePullPolicy</span>:<span style="color:#bbb"> </span>IfNotPresent<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>karmada-agent<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">volumeMounts</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span>/etc/kubeconfig<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>kubeconfig<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">serviceAccountName</span>:<span style="color:#bbb"> </span>karmada-agent-sa<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">tolerations</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">key</span>:<span style="color:#bbb"> </span>node-role.kubernetes.io/master<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">operator</span>:<span style="color:#bbb"> </span>Exists<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">volumes</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>kubeconfig<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">secret</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">secretName</span>:<span style="color:#bbb"> </span>karmada-kubeconfig</code></pre></div></li>
 </ol>
 
 <p><code>deploy-karmada-agent.sh</code>注册成员集群的流程和karmadactl join命令的流程区别在于：</p>
@@ -369,7 +369,7 @@ member2   v1.19.1   Pull   True    32s</code></pre></div>
 <h3 id="1-3-push模式成员集群的注销流程-unjoin">1.3. push模式成员集群的注销流程（unjoin）</h3>
 
 <p>karmadactl的unjoin命令将push模式的成员集群从karmada集群联邦中注销。如下面的例子注销了<code>member1</code>成员集群。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">./karmadactl unjoin member1 --cluster-kubeconfig<span style="color:#555">=</span><span style="color:#033">$HOME</span>/.kube/karmada.config</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">./karmadactl unjoin member1 --cluster-kubeconfig<span style="color:#555">=</span><span style="color:#033">$HOME</span>/.kube/karmada.config</code></pre></div>
 <p>karamdactl的unjoin命令处理流程定义在<code>UnJoinCluster</code>函数中，流程如下：</p>
 
 <ol>
@@ -384,32 +384,32 @@ member2   v1.19.1   Pull   True    32s</code></pre></div>
 <p>finalizer在karmada中的基本工作原理是：</p>
 
 <p>当我们创建一个cluster对象时，cluster controller将<code>karmada.io/cluster-controller</code>作为finalizer写入cluster对象的metadata。执行<code>kubectl get cluster member1 -o yaml --context=karmada-apiserver</code>查看karmadactl的join命令创建的cluster对象，可以看到它的metadata中指定cluster controller为自己的finalizer。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Cluster<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">finalizers</span>:<span style="color:#bbb">
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Cluster<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">finalizers</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">  </span>- karmada.io/cluster-controller<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">syncMode</span>:<span style="color:#bbb"> </span>Push</code></pre></div>
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">syncMode</span>:<span style="color:#bbb"> </span>Push</code></pre></div>
 <p>当我们需要删除一个cluster对象时，cluster controller作为cluster对象的finalizer，会先删除成员集群对应的execution space（execution space是karmada控制面中的一个namespace，每个成员集群都有一个对应的execution space，用以保存需要下发到该成员集群的work等资源），如果execution space成功删除，则删除cluster对象metadata中的finalizer。否则在下个循环中重新尝试删除execution space。直到execution space删除成功，才会删除cluster metadata中的finalizer。</p>
 
 <p>karmada中的work等资源也带有finalizer，执行<code>kubectl get work -n=karmada-es-member1 -o yaml --context=karmada-apiserver</code>可以看到work的finalizer是execution controller，因此删除work时也会由execution controller完成对应的finalizer流程，即在删除work对象之前先删除由work转化而成的k8s原生资源对象。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">items</span>:<span style="color:#bbb">
-</span><span style="color:#bbb"></span>- <span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>work.karmada.io/v1alpha1<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Work<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">finalizers</span>:<span style="color:#bbb">
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">items</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span>- <span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>work.karmada.io/v1alpha1<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Work<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">finalizers</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>- karmada.io/execution-controller<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">resourcebinding.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">resourcebinding.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-687f7fb96f<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>karmada-es-member1<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">workload</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">manifests</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span>...<span style="color:#bbb"> </span>...</code></pre></div>
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">resourcebinding.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">resourcebinding.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-687f7fb96f<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>karmada-es-member1<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">workload</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">manifests</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span>... ...</code></pre></div>
 <h3 id="1-4-pull模式成员集群的注销流程">1.4. pull模式成员集群的注销流程</h3>
 
 <p>karmada目前没有提供类似karmadactl unjoin的命令来注销pull模式下的成员集群。不过根据push模式下的注销流程，可以猜测如下流程应该可以工作：</p>
@@ -459,55 +459,55 @@ cluster status controller使用<code>buildClusterConfig</code>函数，利用成
 </ol>
 
 <p>执行<code>kubectl get cluster member1 -o yaml --context=karmada-apiserver</code>，可以看到一个push模式成员集群的status，由于支持的API资源（<code>apiEnablements</code>）较多，下面的yaml中只保留corev1下的部分API资源：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>cluster.karmada.io/v1alpha1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Cluster<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">finalizers</span>:<span style="color:#bbb">
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>cluster.karmada.io/v1alpha1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Cluster<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">finalizers</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">  </span>- karmada.io/cluster-controller<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">apiEndpoint</span>:<span style="color:#bbb"> </span>https://<span style="color:#f60">172.18.0.4</span>:<span style="color:#f60">6443</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">secretRef</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>karmada-cluster<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">syncMode</span>:<span style="color:#bbb"> </span>Push<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">status</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">apiEnablements</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">groupVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">resources</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Endpoints<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>endpoints<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Node<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nodes<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Pod<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>pods<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Service<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>services<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">apiEndpoint</span>:<span style="color:#bbb"> </span>https://172.18.0.4:6443<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">secretRef</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>karmada-cluster<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">syncMode</span>:<span style="color:#bbb"> </span>Push<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">status</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">apiEnablements</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">groupVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">resources</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Endpoints<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>endpoints<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Node<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nodes<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Pod<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>pods<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Service<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>services<span style="color:#bbb">
 </span><span style="color:#bbb">    </span>...<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">conditions</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">lastTransitionTime</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;2021-09-15T11:46:42Z&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">message</span>:<span style="color:#bbb"> </span>cluster<span style="color:#bbb"> </span>is<span style="color:#bbb"> </span>reachable<span style="color:#bbb"> </span>and<span style="color:#bbb"> </span>health<span style="color:#bbb"> </span>endpoint<span style="color:#bbb"> </span>responded<span style="color:#bbb"> </span>with<span style="color:#bbb"> </span>ok<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">reason</span>:<span style="color:#bbb"> </span>ClusterReady<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">status</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;True&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">type</span>:<span style="color:#bbb"> </span>Ready<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">kubernetesVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#f60">.19.1</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">nodeSummary</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">readyNum</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">totalNum</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">resourceSummary</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">allocatable</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;4&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">ephemeral-storage</span>:<span style="color:#bbb"> </span>49805880Ki<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">hugepages-1Gi</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">hugepages-2Mi</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">memory</span>:<span style="color:#bbb"> </span>8147848Ki<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">pods</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;110&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">allocated</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span>850m<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">memory</span>:<span style="color:#bbb"> </span>190Mi<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">allocating</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">memory</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span></code></pre></div>
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">conditions</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">lastTransitionTime</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;2021-09-15T11:46:42Z&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">message</span>:<span style="color:#bbb"> </span>cluster is reachable and health endpoint responded with ok<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">reason</span>:<span style="color:#bbb"> </span>ClusterReady<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">status</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;True&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">type</span>:<span style="color:#bbb"> </span>Ready<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">kubernetesVersion</span>:<span style="color:#bbb"> </span>v1.19.1<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">nodeSummary</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">readyNum</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">totalNum</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">resourceSummary</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">allocatable</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;4&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">ephemeral-storage</span>:<span style="color:#bbb"> </span>49805880Ki<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">hugepages-1Gi</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">hugepages-2Mi</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">memory</span>:<span style="color:#bbb"> </span>8147848Ki<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">pods</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;110&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">allocated</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span>850m<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">memory</span>:<span style="color:#bbb"> </span>190Mi<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">allocating</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">memory</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span></code></pre></div>
 <p>从上面的cluster对象的yaml中，可以看到当前集群状态是ready（<code>/readyz</code>返回HTTP 200），该状态的转变时间（transition time）为<code>2021-09-15T11:46:42Z</code>，这个时间戳要在集群状态发生变化时才会更新。</p>
 
 <p>cluster status controller还会启动一个lease controller（<code>initLeaseController</code>方法），定时renew一次lease，作用类似心跳检测。</p>

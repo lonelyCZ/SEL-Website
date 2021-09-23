@@ -18,7 +18,7 @@
   
   <meta name="description" content="本篇主要从DeviceTwin组件的源码出发，剖析DeviceTwin模块的内部实现，同时也对其四个子模块（membership、communication、device和twin）的具体执行逻辑进行具体分析。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -267,7 +267,7 @@
 <p>当前，CloudHub与EdgeHub中传递的设备并不是完整的Device API，而是另外重新定义了一个同名的结构体，用于云边的设备信息同步。具体如下所示：</p>
 
 <p>（1）基于Kubernetes CRD机制定义的Device API，位于cloud/pkg/apis/devices/v1alpha2/device_instance_types.go：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">  <span style="color:#09f;font-style:italic">// Device is the Schema for the devices API
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">  <span style="color:#09f;font-style:italic">// Device is the Schema for the devices API
 </span><span style="color:#09f;font-style:italic"></span>  <span style="color:#09f;font-style:italic">// +k8s:openapi-gen=true
 </span><span style="color:#09f;font-style:italic"></span>  <span style="color:#069;font-weight:bold">type</span> Device <span style="color:#069;font-weight:bold">struct</span> {
   	metav1.TypeMeta   <span style="color:#c30">`json:&#34;,inline&#34;`</span>
@@ -304,7 +304,7 @@
 </span><span style="color:#09f;font-style:italic"></span>  	Twins []Twin <span style="color:#c30">`json:&#34;twins,omitempty&#34;`</span>
   }</code></pre></div>
 <p>（2）用于云边消息同步的Device结构体，分别位于cloud/pkg/devicecontroller/types/device.go和edge/pkg/devicetwin/dttype/types.go：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">  <span style="color:#09f;font-style:italic">//Device the struct of device
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">  <span style="color:#09f;font-style:italic">//Device the struct of device
 </span><span style="color:#09f;font-style:italic"></span>  <span style="color:#069;font-weight:bold">type</span> Device <span style="color:#069;font-weight:bold">struct</span> {
   	ID          <span style="color:#078;font-weight:bold">string</span>              <span style="color:#c30">`json:&#34;id,omitempty&#34;`</span>
   	Name        <span style="color:#078;font-weight:bold">string</span>              <span style="color:#c30">`json:&#34;name,omitempty&#34;`</span>
@@ -335,7 +335,7 @@
 <li><p>另外需要指出的是，在当前的Device CRD设计中，并不包含<code>State</code>（表示设备的状态，即“online”、“offline”和“unknown”）和<code>LastOnline</code>（设备的最后在线时间戳）这两个字段；而在云与边的设备信息同步中（即<code>Device</code>结构体）却又包含了这两个字段。后期是否要考虑把这两个字段加入到Device CRD中呢？（此处存疑）</p></li>
 
 <li><p>云边通信（即CloudHub与EdgeHub之间）的消息结构体是<code>model.Message</code>，如下所示：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Message struct
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Message struct
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">type</span> Message <span style="color:#069;font-weight:bold">struct</span> {
 	Header  MessageHeader <span style="color:#c30">`json:&#34;header&#34;`</span>
 	Router  MessageRoute  <span style="color:#c30">`json:&#34;route,omitempty&#34;`</span>
@@ -344,7 +344,7 @@
 </ul>
 
 <p>但在DeviceTwin模块中，传输的消息结构体为<code>DTMessage</code>，如下所示：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">  <span style="color:#09f;font-style:italic">//DTMessage the struct of message for communicating between cloud and edge
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">  <span style="color:#09f;font-style:italic">//DTMessage the struct of message for communicating between cloud and edge
 </span><span style="color:#09f;font-style:italic"></span>  <span style="color:#069;font-weight:bold">type</span> DTMessage <span style="color:#069;font-weight:bold">struct</span> {
   	Msg      <span style="color:#555">*</span>model.Message
   	Identity <span style="color:#078;font-weight:bold">string</span> <span style="color:#09f;font-style:italic">//表示节点ID
@@ -354,7 +354,7 @@
 <h3 id="2-1-代码入口">2.1. 代码入口</h3>
 
 <p>代码入口：edge/pkg/devicetwin/devicetwin.go</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Start run the module
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Start run the module
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (dt <span style="color:#555">*</span>DeviceTwin) <span style="color:#c0f">Start</span>() {
 	dtContexts, _ <span style="color:#555">:=</span> dtcontext.<span style="color:#c0f">InitDTContext</span>()
 	dt.DTContexts = dtContexts
@@ -365,7 +365,7 @@
 <p>可以看到，DeviceTwin模块的启动主要做了两件事情，一是将存储在本地数据库（sqlite）中的设备信息载入至<code>DTContexts</code>中；二是运行各个子模块。</p>
 
 <p>（1）<code>SyncSqlite()</code>负责同步设备元数据，即从本地数据库中查询所有设备，并将这些设备载入至<code>DTContext</code>中。<code>DTContext</code>是一个关键的数据结构，负责存储在DeviceTwin模块中的上下文信息。具体在之后的讨论涉及。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// SyncSqlite sync sqlite
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// SyncSqlite sync sqlite
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">SyncSqlite</span>(context <span style="color:#555">*</span>dtcontext.DTContext) <span style="color:#078;font-weight:bold">error</span> {
 	<span style="color:#555">...</span>
 	rows, queryErr <span style="color:#555">:=</span> dtclient.<span style="color:#c0f">QueryDeviceAll</span>() <span style="color:#09f;font-style:italic">//从本地数据库中查询所有设备
@@ -377,7 +377,7 @@
 	<span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">nil</span>
 }</code></pre></div>
 <p>（2）<code>runDeviceTwin()</code>则包含3个方面的内容，分别是 1）注册并启动子模块；2）向子模块分发消息；3）健康检查。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (dt <span style="color:#555">*</span>DeviceTwin) <span style="color:#c0f">runDeviceTwin</span>() {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (dt <span style="color:#555">*</span>DeviceTwin) <span style="color:#c0f">runDeviceTwin</span>() {
 	moduleNames <span style="color:#555">:=</span> []<span style="color:#078;font-weight:bold">string</span>{dtcommon.MemModule, dtcommon.TwinModule, dtcommon.DeviceModule, dtcommon.CommModule}
   <span style="color:#09f;font-style:italic">//1.注册并启动子模块
 </span><span style="color:#09f;font-style:italic"></span>	<span style="color:#069;font-weight:bold">for</span> _, v <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">range</span> moduleNames {
@@ -428,7 +428,7 @@
 <h3 id="2-2-消息转发">2.2. 消息转发</h3>
 
 <p>函数入口：edge/pkg/devicetwin/process.go</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">//distributeMsg distribute message to diff module
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">//distributeMsg distribute message to diff module
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (dt <span style="color:#555">*</span>DeviceTwin) <span style="color:#c0f">distributeMsg</span>(m <span style="color:#069;font-weight:bold">interface</span>{}) <span style="color:#078;font-weight:bold">error</span> {
    msg, ok <span style="color:#555">:=</span> m.(model.Message)
    <span style="color:#555">...</span>
@@ -465,7 +465,7 @@
 <p>具体来看<code>classifyMsg()</code>这一方法，搞懂它至关重要。</p>
 
 <p>首先，会根据消息源(<code>msg.Router.Source</code>)判断进入哪个分支。比如，设备的信息是由云端的<code>devicecontroller</code>组件发送过来的，因此<code>msg.Router.Resource</code>就等于<code>devicecontroller</code>。紧接着，会根据消息体所传送的资源类型(<code>msg.Router.Resource</code>)进一步分类，从而确定对应的<code>Action</code>是什么，最后根据不同的<code>Action</code>将消息转发至不同的子模块中。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">classifyMsg</span>(message <span style="color:#555">*</span>dttype.DTMessage) <span style="color:#078;font-weight:bold">bool</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">classifyMsg</span>(message <span style="color:#555">*</span>dttype.DTMessage) <span style="color:#078;font-weight:bold">bool</span> {
 	<span style="color:#069;font-weight:bold">if</span> EventActionMap <span style="color:#555">==</span> <span style="color:#069;font-weight:bold">nil</span> {
 		<span style="color:#c0f">initEventActionMap</span>()
 	}
@@ -506,15 +506,16 @@
 <p>我们以云端DeviceController与边缘端通信作为示例，加以说明。（DeviceController分析详见xx）</p>
 
 <p>假设云端<a href="https://github.com/kubeedge/kubeedge/blob/master/cloud/pkg/devicecontroller/controller/downstream.go#L388">新增一个设备</a>，就会构造这样一条消息，并发送至边缘端。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">//cloud/pkg/devicecontroller/controller/downstream.go -&gt; deviceAdded()
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">//cloud/pkg/devicecontroller/controller/downstream.go -&gt; deviceAdded()
 </span><span style="color:#09f;font-style:italic"></span>msg <span style="color:#555">:=</span> model.<span style="color:#c0f">NewMessage</span>(<span style="color:#c30">&#34;&#34;</span>)
 resource, err <span style="color:#555">:=</span> messagelayer.<span style="color:#c0f">BuildResource</span>(device.Spec.NodeSelector.NodeSelectorTerms[<span style="color:#f60">0</span>].MatchExpressions[<span style="color:#f60">0</span>].Values[<span style="color:#f60">0</span>], <span style="color:#c30">&#34;membership&#34;</span>, <span style="color:#c30">&#34;&#34;</span>)
 msg.<span style="color:#c0f">BuildRouter</span>(modules.DeviceControllerModuleName, constants.GroupTwin, resource, model.UpdateOperation)
-msg.Content = xxx <span style="color:#555">//</span>这里存放消息传递的有效数据</code></pre></div>
+msg.Content = xxx <span style="color:#09f;font-style:italic">//这里存放消息传递的有效数据
+</span></code></pre></div>
 <p>其中，<code>device.Spec.NodeSelector.NodeSelectorTerms[0].MatchExpressions[0].Values[0]</code>表示在创建设备实例时通过<code>NodeSelector</code>所绑定的边缘节点，假设为”edgenode_1“，那么，就会构造出：</p>
-<pre><code>resource = &#34;node/edgenode_1/membership&#34;</code></pre>
+<pre tabindex="0"><code>resource = &#34;node/edgenode_1/membership&#34;</code></pre>
 <p>而<code>msg.BuildRouter(modules.DeviceControllerModuleName, constants.GroupTwin, resource, model.UpdateOperation)</code>则定义了消息的路由信息，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">msg.Router.Source = <span style="color:#c30">&#34;devicecontroller&#34;</span>  <span style="color:#09f;font-style:italic">//表示消息源
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">msg.Router.Source = <span style="color:#c30">&#34;devicecontroller&#34;</span>  <span style="color:#09f;font-style:italic">//表示消息源
 </span><span style="color:#09f;font-style:italic"></span>msg.Router.Group = <span style="color:#c30">&#34;twin&#34;</span>               <span style="color:#09f;font-style:italic">//表示消息发送的组别
 </span><span style="color:#09f;font-style:italic"></span>msg.Router.Resource = <span style="color:#c30">&#34;node/edgenode_1/membership&#34;</span> <span style="color:#09f;font-style:italic">//表示消息的资源类型，也表示topic类型
 </span><span style="color:#09f;font-style:italic"></span>msg.Router.Operation = <span style="color:#c30">&#34;update&#34;</span></code></pre></div>
@@ -527,7 +528,7 @@ msg.Content = xxx <span style="color:#555">//</span>这里存放消息传递的�
 <h4 id="membership">membership</h4>
 
 <p><code>membership</code>模块实际上就是负责管理边缘节点上的设备。当有新增设备或删除设备，都是由这一组件负责处理。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">//Start worker
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">//Start worker
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (mw MemWorker) <span style="color:#c0f">Start</span>() {
 	<span style="color:#c0f">initMemActionCallBack</span>() <span style="color:#09f;font-style:italic">//初始化DTMessage.Action与回调函数的映射关系
 </span><span style="color:#09f;font-style:italic"></span>	<span style="color:#069;font-weight:bold">for</span> {

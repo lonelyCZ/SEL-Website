@@ -18,7 +18,7 @@
   
   <meta name="description" content="kubelet作为k8s集群node上的重要组件，一直饱受关注。下面请随笔者一起walk through the code.">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -284,7 +284,7 @@
 </ul>
 
 <p><strong>Step2</strong>: <code>createAndInitKubelet</code>，顾名思义，创建并初始化kubelet。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">k, podCfg, err <span style="color:#555">:=</span> <span style="color:#c0f">builder</span>(kcfg)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">k, podCfg, err <span style="color:#555">:=</span> <span style="color:#c0f">builder</span>(kcfg)</code></pre></div>
 <p>builder在这里定义为createAndInitKubelet。</p>
 
 <p>注意到这里返回了三个变量值，其中k为<code>KubeletBootstrap</code>（kubelet的interface），podCfg是<code>config.PodConfig</code>，最后一个是error变量。 podCfg变量是通过<code>pc = makePodSourceConfig(kc)</code>返回的，其中kc为传入的<code>kubeletConfig</code>变量。k则由<code>NewMainKubelet</code>函数返回。</p>
@@ -300,7 +300,7 @@
 <p><em>Section 1</em>: makePodSourceConfig</p>
 
 <p>该函数的返回值是一个config.PodConfig变量，用于将不同source的pod configuration合并到一个结构中，结构如下所示。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// PodConfig is a configuration mux that merges many sources of pod configuration into a single
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// PodConfig is a configuration mux that merges many sources of pod configuration into a single
 </span><span style="color:#09f;font-style:italic">// consistent structure, and then delivers incremental change notifications to listeners
 </span><span style="color:#09f;font-style:italic">// in order.
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">type</span> PodConfig <span style="color:#069;font-weight:bold">struct</span> {
@@ -315,7 +315,7 @@
     sources     util.StringSet
 }</code></pre></div>
 <p>下面，我们具体来看<code>makePodSourceConfig</code>完成了什么工作。源码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">makePodSourceConfig</span>(kc <span style="color:#555">*</span>KubeletConfig) <span style="color:#555">*</span>config.PodConfig {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">makePodSourceConfig</span>(kc <span style="color:#555">*</span>KubeletConfig) <span style="color:#555">*</span>config.PodConfig {
     <span style="color:#09f;font-style:italic">// source of all configuration
 </span><span style="color:#09f;font-style:italic"></span>    cfg <span style="color:#555">:=</span> config.<span style="color:#c0f">NewPodConfig</span>(config.PodConfigNotificationSnapshotAndUpdates, kc.Recorder)
 
@@ -345,7 +345,7 @@
 <p>也许读者会好奇，这个Channel函数具体做了哪些工作呢？ 它会创建并返回一个<code>interface{}</code>类型的channel，并且启动go routine持续监听该Channel，并且将监听到的update进行merge。</p>
 
 <p>merge是在<code>NewPodConfig</code>阶段决定的，即此前<code>newPodStorage(updates, mode, recorder)</code>返回的<code>podStorage</code>的Merge函数。该Merge函数定义在pkg/kubelet/config/config.go中，在该过程中会将监听的channel中更新的信息更新到cfg.updates中。限于篇幅，此处只展示<code>PodConfigNotificationSnapshotAndUpdates</code>对应的case，其它仅以&rdquo;&hellip;&ldquo;代替。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Merge normalizes a set of incoming changes from different sources into a map of all Pods
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Merge normalizes a set of incoming changes from different sources into a map of all Pods
 </span><span style="color:#09f;font-style:italic">// and ensures that redundant changes are filtered out, and then pushes zero or more minimal
 </span><span style="color:#09f;font-style:italic">// updates onto the update channel.  Ensures that updates are delivered in order.
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (s <span style="color:#555">*</span>podStorage) <span style="color:#c0f">Merge</span>(source <span style="color:#078;font-weight:bold">string</span>, change <span style="color:#069;font-weight:bold">interface</span>{}) <span style="color:#078;font-weight:bold">error</span> {
@@ -375,7 +375,7 @@
 <li><p>通过<code>NewListWatchFromClient</code>函数构造了一个ListWatch</p></li>
 
 <li><p>调用<code>newSourceApiserverFromLW</code>来watch并pull（拉取）apiserver的更新。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// newSourceApiserverFromLW holds creates a config source that watches and pulls from the apiserver. 
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// newSourceApiserverFromLW holds creates a config source that watches and pulls from the apiserver. 
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">newSourceApiserverFromLW</span>(lw cache.ListerWatcher, updates <span style="color:#069;font-weight:bold">chan</span><span style="color:#555">&lt;-</span> <span style="color:#069;font-weight:bold">interface</span>{}) { 
   send <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">func</span>(objs []<span style="color:#069;font-weight:bold">interface</span>{}) { 
     <span style="color:#069;font-weight:bold">var</span> pods []_api.Pod <span style="color:#069;font-weight:bold">for</span> _, o <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">range</span> objs { 
@@ -392,7 +392,7 @@
 <p>可以看到，<code>newSourceApiserverFromLW</code>的执行核心只有一行代码，将创建出来的Reflector Run起来。</p>
 
 <p><code>NewReflector</code>函数创建一个Reflector对象，用于保证传入的第三个参数Store里的内容是update to date的。第三个参数以send函数为参数构建一个UndeltaStore，其PushFunc为send函数。 UndeltaStore listens to incremental updates and sends complete state on every change.也就是说，UndeltaStore不仅接受从Reflector来的update，并且还会使用UndeltaStore.PushFunc来进行change的deliver。这里就是写入到Cfg.Updates里，即完成了update的写操作。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Reflector watches a specified resource and causes all changes to be reflected in the given store.
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Reflector watches a specified resource and causes all changes to be reflected in the given store.
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">type</span> Reflector <span style="color:#069;font-weight:bold">struct</span> {
     <span style="color:#09f;font-style:italic">// name identifies this reflector.  By default it will be a file:line if possible.
 </span><span style="color:#09f;font-style:italic"></span>    name <span style="color:#078;font-weight:bold">string</span>
@@ -453,9 +453,9 @@
 <p>根据运行类别分为两种，其一为RunOnce（只运行一次），其二为startKubelet（持续运行不退出）；两种情况本质的处理逻辑是类似的，下面谨以第二种为例进行讲述。</p>
 
 <p>该函数的核心——启动kubelet——由如下一行代码完成，</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">go</span> util.<span style="color:#c0f">Forever</span>(<span style="color:#069;font-weight:bold">func</span>() { k.<span style="color:#c0f">Run</span>(podCfg.<span style="color:#c0f">Updates</span>()) }, <span style="color:#f60">0</span>)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">go</span> util.<span style="color:#c0f">Forever</span>(<span style="color:#069;font-weight:bold">func</span>() { k.<span style="color:#c0f">Run</span>(podCfg.<span style="color:#c0f">Updates</span>()) }, <span style="color:#f60">0</span>)</code></pre></div>
 <p><code>podCfg.Updates()</code>返回podCfg.updates，类型为<code>&lt;-chan kubelet.PodUpdate</code>，即前述提及的缓冲区为50的用以存储Pod更新信息的channel，让我们来一览其结构。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// PodUpdate defines an operation sent on the channel. You can add or remove single services by
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// PodUpdate defines an operation sent on the channel. You can add or remove single services by
 </span><span style="color:#09f;font-style:italic">// sending an array of size one and Op == ADD|REMOVE (with REMOVE, only the ID is required).
 </span><span style="color:#09f;font-style:italic">// For setting the state of the system to a given state for this source configuration, set
 </span><span style="color:#09f;font-style:italic">// Pods as desired and Op to SET, which will reset the system state to that specified in this
@@ -488,7 +488,7 @@
 <h4 id="2-2-2-1-statusmanager的启动"><strong>2.2.2.1</strong> statusManager的启动</h4>
 
 <p>我们知道statusManager负责监听从apiserver对于pod的更新，更新的读写通过podStatusSyncRequest类型的channel<code>podStatusChannel</code>。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> podStatusSyncRequest <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">type</span> podStatusSyncRequest <span style="color:#069;font-weight:bold">struct</span> {
     pod    <span style="color:#555">*</span>api.Pod
     status api.PodStatus
 }
@@ -503,7 +503,7 @@
     podStatusChannel <span style="color:#069;font-weight:bold">chan</span> podStatusSyncRequest
 }</code></pre></div>
 <p><code>statusManager.Start</code>执行核心工作的代码如下</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">go</span> util.<span style="color:#c0f">Forever</span>(<span style="color:#069;font-weight:bold">func</span>() {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">go</span> util.<span style="color:#c0f">Forever</span>(<span style="color:#069;font-weight:bold">func</span>() {
         err <span style="color:#555">:=</span> s.<span style="color:#c0f">syncBatch</span>()
         <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
             glog.<span style="color:#c0f">Warningf</span>(<span style="color:#c30">&#34;Failed to updated pod status: %v&#34;</span>, err)
@@ -514,7 +514,7 @@
 <h4 id="2-2-2-2-syncloop"><strong>2.2.2.2</strong> syncLoop</h4>
 
 <p><code>syncLoop</code>这个函数使用到了传入的channel参数，即podCfg.updates，第二个参数为kubelet实例本身。它的函数体异常简单，但是却为我们执行了非常重要的sync pod的核心任务。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// syncLoop is the main loop for processing changes. It watches for changes from
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// syncLoop is the main loop for processing changes. It watches for changes from
 </span><span style="color:#09f;font-style:italic">// three channels (file, apiserver, and http) and creates a union of them. For
 </span><span style="color:#09f;font-style:italic">// any new change seen, will run a sync against desired state and running state. If
 </span><span style="color:#09f;font-style:italic">// no changes are seen to the configuration, will synchronize the last known desired
@@ -526,10 +526,10 @@
     }
 }</code></pre></div>
 <p><code>syncLoopIteration</code>方法在检查各种配置之后，启动select监听updates（channel）上的数据，一旦有更新的数据，则执行<code>podManager.UpdatePods</code>方法，负责update the internal pods with those provided by the update，实际上就是在podManager的列表里进行相应的更新，并进行相应的标记——把每个pod（以types.UID标记）及其SyncPodType记录好（该函数执行完毕后，所有现有的pod的状态都是&rdquo;sync&rdquo;）。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">podSyncTypes <span style="color:#555">:=</span> <span style="color:#366">make</span>(<span style="color:#069;font-weight:bold">map</span>[types.UID]SyncPodType)
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">podSyncTypes <span style="color:#555">:=</span> <span style="color:#366">make</span>(<span style="color:#069;font-weight:bold">map</span>[types.UID]SyncPodType)
 kl.podManager.<span style="color:#c0f">UpdatePods</span>(u, podSyncTypes)</code></pre></div>
 <p>然后，则是最为重要的sync pod</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> handler.<span style="color:#c0f">SyncPods</span>(pods, podSyncTypes, mirrorPods, start); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> handler.<span style="color:#c0f">SyncPods</span>(pods, podSyncTypes, mirrorPods, start); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
         glog.<span style="color:#c0f">Errorf</span>(<span style="color:#c30">&#34;Couldn&#39;t sync containers: %v&#34;</span>, err)
     }</code></pre></div>
 <p><code>handler.SyncPods</code>方法实际为pkg/kubelet/kubelet.go#SyncPods，进行的工作为<strong>SyncPods synchronizes the configured list of pods (desired state) with the host current state</strong>。具体包括如下步骤：</p>
@@ -546,7 +546,7 @@ kl.podManager.<span style="color:#c0f">UpdatePods</span>(u, podSyncTypes)</code>
 </ol>
 
 <p>下面我们来具体分析一下第3条<code>Kubelet.podWorkers.UpdatePod</code>进行的工作。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Apply the new setting to the specified pod. updateComplete is called when the update is completed.
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Apply the new setting to the specified pod. updateComplete is called when the update is completed.
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (p <span style="color:#555">*</span>podWorkers) <span style="color:#c0f">UpdatePod</span>(pod <span style="color:#555">*</span>api.Pod, mirrorPod <span style="color:#555">*</span>api.Pod, updateComplete <span style="color:#069;font-weight:bold">func</span>()) {
     uid <span style="color:#555">:=</span> pod.UID
     <span style="color:#069;font-weight:bold">var</span> podUpdates <span style="color:#069;font-weight:bold">chan</span> workUpdate
@@ -588,7 +588,7 @@ kl.podManager.<span style="color:#c0f">UpdatePods</span>(u, podSyncTypes)</code>
 <p>如果该pod在podWorkers.podUpdates里不存在，则需要进行创建，此时调用<code>podWorkers.managePodLoop</code>。 然后，根据<code>podWorkers.isWorking[pod.UID]</code>的值更新对应podUpdates的值或者传入<code>podWorkers.lastUndeliveredWorkUpdate</code>。这是对于对应pod状态的一个记录。</p>
 
 <p>下面我们具体来看一下创建新pod的过程经历了什么。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (p <span style="color:#555">*</span>podWorkers) <span style="color:#c0f">managePodLoop</span>(podUpdates <span style="color:#555">&lt;-</span><span style="color:#069;font-weight:bold">chan</span> workUpdate) {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (p <span style="color:#555">*</span>podWorkers) <span style="color:#c0f">managePodLoop</span>(podUpdates <span style="color:#555">&lt;-</span><span style="color:#069;font-weight:bold">chan</span> workUpdate) {
     <span style="color:#069;font-weight:bold">var</span> minRuntimeCacheTime time.Time
     <span style="color:#069;font-weight:bold">for</span> newWork <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">range</span> podUpdates {
         <span style="color:#069;font-weight:bold">func</span>() {
@@ -619,7 +619,7 @@ kl.podManager.<span style="color:#c0f">UpdatePods</span>(u, podSyncTypes)</code>
     }
 }</code></pre></div>
 <p>从代码中可以看到，核心步骤调用了<code>podWorkers.syncPodFn</code>，这是在创建podWorker时构建的，具体指向了<code>func (kl *Kubelet) syncPod</code>（定义在pkg/kubelet/kubelet.go，完整的传参列表</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (kl <span style="color:#555">*</span>Kubelet) <span style="color:#c0f">syncPod</span>(pod <span style="color:#555">*</span>api.Pod, mirrorPod <span style="color:#555">*</span>api.Pod, runningPod kubecontainer.Pod, updateType SyncPodType) <span style="color:#078;font-weight:bold">error</span> {}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (kl <span style="color:#555">*</span>Kubelet) <span style="color:#c0f">syncPod</span>(pod <span style="color:#555">*</span>api.Pod, mirrorPod <span style="color:#555">*</span>api.Pod, runningPod kubecontainer.Pod, updateType SyncPodType) <span style="color:#078;font-weight:bold">error</span> {}</code></pre></div>
 <p>这个函数在做什么呢？ Let&rsquo;s figure it out.</p>
 
 <ul>

@@ -18,7 +18,7 @@
   
   <meta name="description" content="Kubernetes是Google开源的容器集群管理系统，构建于Docker之上，为容器化的应用提供资源调度、部署运行、服务发现、扩容缩容等功能。 Pod是创建、调度和管理的最小部署单位，本文详细介绍这些Pod之间的通信和调度。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -228,7 +228,7 @@
 <h1 id="定义服务"><strong>定义服务</strong></h1>
 
 <p>这里是一个使用服务的例子。在Kubernetes中，服务是REST对象，类似于pod。如pod一般，服务的定义，可以通过一个发给apiserver的POST请求，来完成创建一个新的实例。例如，假设你有一组pods，都暴露9376端口，并携带一个&rdquo;app=MyApp&rdquo;的标签。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">{
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">{
   <span style="color:#c30">&#34;id&#34;</span>: <span style="color:#c30">&#34;myapp&#34;</span>,
   <span style="color:#c30">&#34;selector&#34;</span>: {
     <span style="color:#c30">&#34;app&#34;</span>: <span style="color:#c30">&#34;MyApp&#34;</span>
@@ -244,7 +244,7 @@
 <p>在Kubernetes集群中的每个节点（node）上都运行着一个服务代理（service proxy）。该代理应用监听Kubernetes Master，以此来添加和删除服务对象及端点（endpoints，即满足服务标签选择器的pods），同时该代理应用还存储一个服务到端点列表的映射。它为每个服务在本地节点上打开一个端口，并转发该端口上的所有流量到后端。名义上是依据策略来执行的，但现在唯一支持的策略是轮转调度（round-robin）。</p>
 
 <p>当一个pod被编入，Master为每一个存活的服务增加一组环境变量。我们支持<a href="https://docs.docker.com/userguide/dockerlinks/">Docker-links-compatible</a>变量（参见<a href="https://github.com/GoogleCloudPlatform/kubernetes/blob/master/pkg/kubelet/envvars/envvars.go#L49">makeLinkVariables</a>）以及更简单的{SVCNAME}_SERVICE_HOST和{SVCNAME}_SERVICE_PORT变量，其中的服务名要求大写，破折号将转换为下划线。具体的服务工作图如图1 。例如，服务&rdquo;redis-master&rdquo;监听TCP端口637，并分配IP地址10.0.0.11，将产生以下环境变量：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#033">REDIS_MASTER_SERVICE_HOST</span><span style="color:#555">=</span>10.0.0.11
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#033">REDIS_MASTER_SERVICE_HOST</span><span style="color:#555">=</span>10.0.0.11
 <span style="color:#033">REDIS_MASTER_SERVICE_PORT</span><span style="color:#555">=</span><span style="color:#f60">6379</span>
 <span style="color:#033">REDIS_MASTER_PORT</span><span style="color:#555">=</span>tcp://10.0.0.11:6379
 <span style="color:#033">REDIS_MASTER_PORT_6379_TCP</span><span style="color:#555">=</span>tcp://10.0.0.11:6379

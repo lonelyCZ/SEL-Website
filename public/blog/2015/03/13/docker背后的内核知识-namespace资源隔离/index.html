@@ -18,7 +18,7 @@
   
   <meta name="description" content="本文从namespace使用的API开始，结合Docker逐步对六个namespace进行讲解。相信把讲解过程中所有的代码整合起来，你也能实现一个属于自己的“shell”容器了。虽然namespace技术使用起来非常简单，但是要真正把容器做到安全易用却并非易事。PID namespace中，我们要实现一个完善的init进程来维护好所有进程；network namespace中，我们还有复杂的路由表和iptables规则没有配置；user namespace中还有很多权限上的问题需要考虑等等。其中有些方面Docker已经做的很好，有些方面也才刚刚开始。希望通过本文，能为大家更好的理解Docker背后运行的原理提供帮助。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -234,7 +234,7 @@
 <h3 id="1-通过-clone-创建新进程的同时创建namespace"><strong>（1）通过<code>clone()</code>创建新进程的同时创建namespace</strong></h3>
 
 <p>使用<code>clone()</code>来创建一个独立namespace的进程是最常见做法，它的调用方式如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#078;font-weight:bold">int</span> <span style="color:#c0f">clone</span>(<span style="color:#078;font-weight:bold">int</span> (<span style="color:#555">*</span>child_func)(void <span style="color:#555">*</span>), void <span style="color:#555">*</span>child_stack, <span style="color:#078;font-weight:bold">int</span> flags, void <span style="color:#555">*</span>arg);</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#078;font-weight:bold">int</span> <span style="color:#c0f">clone</span>(<span style="color:#078;font-weight:bold">int</span> (<span style="color:#555">*</span>child_func)(void <span style="color:#555">*</span>), void <span style="color:#555">*</span>child_stack, <span style="color:#078;font-weight:bold">int</span> flags, void <span style="color:#555">*</span>arg);</code></pre></div>
 <p><code>clone()</code>实际上是传统UNIX系统调用<code>fork()</code>的一种更通用的实现方式，它可以通过<code>flags</code>来控制使用多少功能。一共有二十多种<code>CLONE_*</code>的<code>flag（标志位）</code>参数用来控制<code>clone</code>进程的方方面面（如是否与父进程共享虚拟内存等等），下面外面逐一讲解<code>clone</code>函数传入的参数。</p>
 
 <ul>
@@ -249,7 +249,7 @@
 <h3 id="2-查看-proc-pid-ns文件"><strong>（2）查看/proc/[pid]/ns文件</strong></h3>
 
 <p>从3.8版本的内核开始，用户就可以在<code>/proc/[pid]/ns</code>文件下看到指向不同namespace号的文件，效果如下所示，形如<code>[4026531839]</code>者即为namespace号。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ls -l /proc/<span style="color:#033">$$</span>/ns         &lt;&lt;-- <span style="color:#033">$$</span> 表示应用的PID
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ ls -l /proc/<span style="color:#033">$$</span>/ns         &lt;&lt;-- <span style="color:#033">$$</span> 表示应用的PID
 total <span style="color:#f60">0</span>
 lrwxrwxrwx. <span style="color:#f60">1</span> mtk mtk <span style="color:#f60">0</span> Jan  <span style="color:#f60">8</span> 04:12 ipc -&gt; ipc:<span style="color:#555">[</span>4026531839<span style="color:#555">]</span>
 lrwxrwxrwx. <span style="color:#f60">1</span> mtk mtk <span style="color:#f60">0</span> Jan  <span style="color:#f60">8</span> 04:12 mnt -&gt; mnt:<span style="color:#555">[</span>4026531840<span style="color:#555">]</span>
@@ -258,31 +258,31 @@ lrwxrwxrwx. <span style="color:#f60">1</span> mtk mtk <span style="color:#f60">0
 lrwxrwxrwx. <span style="color:#f60">1</span> mtk mtk <span style="color:#f60">0</span> Jan  <span style="color:#f60">8</span> 04:12 user-&gt;user:<span style="color:#555">[</span>4026531837<span style="color:#555">]</span>
 lrwxrwxrwx. <span style="color:#f60">1</span> mtk mtk <span style="color:#f60">0</span> Jan  <span style="color:#f60">8</span> 04:12 uts -&gt; uts:<span style="color:#555">[</span>4026531838<span style="color:#555">]</span></code></pre></div>
 <p>如果两个进程指向的namespace编号相同，就说明他们在同一个namespace下，否则则在不同namespace里面。<code>/proc/[pid]/ns</code>的另外一个作用是，一旦文件被打开，只要打开的文件描述符（fd）存在，那么就算<code>PID</code>所属的所有进程都已经结束，创建的namespace就会一直存在。那如何打开文件描述符呢？把<code>/proc/[pid]/ns</code>目录挂载起来就可以达到这个效果，命令如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># touch ~/uts</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># touch ~/uts</span>
 mount --bind /proc/27514/ns/uts ~/uts</code></pre></div>
 <p>如果你看到的内容与本文所描述的不符，那么说明你使用的内核在3.8版本以前。该目录下存在的只有<code>ipc</code>、<code>net</code>和<code>uts</code>，并且以硬链接存在。</p>
 
 <h3 id="3-通过-setns-加入一个已经存在的namespace"><strong>（3）通过<code>setns()</code>加入一个已经存在的namespace</strong></h3>
 
 <p>上文刚提到，在进程都结束的情况下，也可以通过挂载的形式把namespace保留下来，保留namespace的目的自然是为以后有进程加入做准备。通过<code>setns()</code>系统调用，你的进程从原先的namespace加入我们准备好的新namespace，使用方法如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#078;font-weight:bold">int</span> <span style="color:#c0f">setns</span>(<span style="color:#078;font-weight:bold">int</span> fd, <span style="color:#078;font-weight:bold">int</span> nstype);</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#078;font-weight:bold">int</span> <span style="color:#c0f">setns</span>(<span style="color:#078;font-weight:bold">int</span> fd, <span style="color:#078;font-weight:bold">int</span> nstype);</code></pre></div>
 <ul>
 <li>参数<code>fd</code>表示我们要加入的namespace的文件描述符。上文已经提到，它是一个指向<code>/proc/[pid]/ns</code>目录的文件描述符，可以通过直接打开该目录下的链接或者打开一个挂载了该目录下链接的文件得到。</li>
 <li>参数<code>nstype</code>让调用者可以去检查<code>fd</code>指向的namespace类型是否符合我们实际的要求。如果填<code>0</code>表示不检查。</li>
 </ul>
 
 <p>为了把我们创建的namespace利用起来，我们需要引入<code>execve()</code>系列函数，这个函数可以执行用户命令，最常用的就是调用<code>/bin/bash</code>并接受参数，运行起一个<code>shell</code>，用法如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#033">fd</span> <span style="color:#555">=</span> open<span style="color:#555">(</span>argv<span style="color:#555">[</span>1<span style="color:#555">]</span>, O_RDONLY<span style="color:#555">)</span>;   /* 获取namespace文件描述符 */
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#033">fd</span> <span style="color:#555">=</span> open<span style="color:#555">(</span>argv<span style="color:#555">[</span>1<span style="color:#555">]</span>, O_RDONLY<span style="color:#555">)</span>;   /* 获取namespace文件描述符 */
 setns<span style="color:#555">(</span>fd, 0<span style="color:#555">)</span>;                   /* 加入新的namespace */
 execvp<span style="color:#555">(</span>argv<span style="color:#555">[</span>2<span style="color:#555">]</span>, &amp;argv<span style="color:#555">[</span>2<span style="color:#555">])</span>;      /* 执行程序 */</code></pre></div>
 <p>假设编译后的程序名称为<code>setns</code>。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ./setns ~/uts /bin/bash   # ~/uts 是绑定的/proc/27514/ns/uts</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ./setns ~/uts /bin/bash   # ~/uts 是绑定的/proc/27514/ns/uts</span></code></pre></div>
 <p>至此，你就可以在新的命名空间中执行<code>shell</code>命令了，在下文中会多次使用这种方式来演示隔离的效果。</p>
 
 <h3 id="4-通过-unshare-在原先进程上进行namespace隔离"><strong>（4）通过<code>unshare()</code>在原先进程上进行namespace隔离</strong></h3>
 
 <p>最后要提的系统调用是<code>unshare()</code>，它跟<code>clone()</code>很像，不同的是，<code>unshare()</code>运行在原先的进程上，不需要启动一个新进程，使用方法如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#078;font-weight:bold">int</span> <span style="color:#c0f">unshare</span>(<span style="color:#078;font-weight:bold">int</span> flags);</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#078;font-weight:bold">int</span> <span style="color:#c0f">unshare</span>(<span style="color:#078;font-weight:bold">int</span> flags);</code></pre></div>
 <p>调用<code>unshare()</code>的主要作用就是不启动一个新进程就可以起到隔离的效果，相当于跳出原先的namespace进行操作。这样，你就可以在原进程进行一些需要隔离的操作。Linux中自带的<code>unshare</code>命令，就是通过<code>unshare()</code>系统调用实现的，有兴趣的读者可以在网上搜索一下这个命令的作用。</p>
 
 <h3 id="5-延伸阅读-fork-系统调用"><strong>（5）延伸阅读：<code>fork（）</code>系统调用</strong></h3>
@@ -296,7 +296,7 @@ execvp<span style="color:#555">(</span>argv<span style="color:#555">[</span>2<sp
 </ul>
 
 <p>下面给出一段实例代码，命名为<code>fork_example.c</code>。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a00;background-color:#faa">#</span>include &lt;unistd.h&gt;
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a00;background-color:#faa">#</span>include &lt;unistd.h&gt;
 <span style="color:#a00;background-color:#faa">#</span>include &lt;stdio.h&gt;
 <span style="color:#078;font-weight:bold">int</span> <span style="color:#c0f">main</span> (){
     pid_t fpid; <span style="color:#09f;font-style:italic">//fpid表示fork函数返回的值
@@ -312,7 +312,7 @@ execvp<span style="color:#555">(</span>argv<span style="color:#555">[</span>2<sp
     <span style="color:#069;font-weight:bold">return</span> <span style="color:#f60">0</span>;
 }</code></pre></div>
 <p>编译并执行，结果如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# gcc -Wall fork_example.c <span style="color:#555">&amp;&amp;</span> ./a.out
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# gcc -Wall fork_example.c <span style="color:#555">&amp;&amp;</span> ./a.out
 I am parent. Process id is <span style="color:#f60">28365</span>
 I am child. Process id is <span style="color:#f60">28366</span></code></pre></div>
 <p>使用<code>fork()</code>后，父进程有义务监控子进程的运行状态，并在子进程退出后自己才能正常退出，否则子进程就会成为“孤儿”进程。 下面我们将分别对六种namespace进行详细解析。</p>
@@ -320,7 +320,7 @@ I am child. Process id is <span style="color:#f60">28366</span></code></pre></di
 <h2 id="2-uts-unix-time-sharing-system-namespace"><strong>2. UTS（UNIX Time-sharing System）namespace</strong></h2>
 
 <p>UTS namespace提供了主机名和域名的隔离，这样每个容器就可以拥有了独立的主机名和域名，在网络上可以被视作一个独立的节点而非宿主机上的一个进程。 下面我们通过代码来感受一下UTS隔离的效果，首先需要一个程序的骨架，如下所示。打开编辑器创建<code>uts.c</code>文件，输入如下代码。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#099">#define _GNU_SOURCE
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#099">#define _GNU_SOURCE
 </span><span style="color:#099">#include</span> <span style="color:#099">&lt;sys/types.h&gt;</span><span style="color:#099">
 </span><span style="color:#099">#include</span> <span style="color:#099">&lt;sys/wait.h&gt;</span><span style="color:#099">
 </span><span style="color:#099">#include</span> <span style="color:#099">&lt;stdio.h&gt;</span><span style="color:#099">
@@ -350,7 +350,7 @@ I am child. Process id is <span style="color:#f60">28366</span></code></pre></di
   <span style="color:#069;font-weight:bold">return</span> <span style="color:#f60">0</span>;
 }</code></pre></div>
 <p>编译并运行上述代码，执行如下命令，效果如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# gcc -Wall uts.c -o uts.o <span style="color:#555">&amp;&amp;</span> ./uts.o
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# gcc -Wall uts.c -o uts.o <span style="color:#555">&amp;&amp;</span> ./uts.o
 程序开始:
 在子进程中!
 root@local:~# <span style="color:#366">exit</span>
@@ -358,7 +358,7 @@ root@local:~# <span style="color:#366">exit</span>
 已退出
 root@local:~#</code></pre></div>
 <p>下面，我们将修改代码，加入UTS隔离。<strong>运行代码需要root权限</strong>，为了防止普通用户任意修改系统主机名导致<code>set-user-ID</code>相关的应用运行出错。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#09f;font-style:italic">//[...]
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#09f;font-style:italic">//[...]
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#078;font-weight:bold">int</span> <span style="color:#c0f">child_main</span>(<span style="color:#078;font-weight:bold">void</span><span style="color:#555">*</span> arg) {
   printf(<span style="color:#c30">&#34;在子进程中!</span><span style="color:#c30;font-weight:bold">\n</span><span style="color:#c30">&#34;</span>);
   sethostname(<span style="color:#c30">&#34;Changed Namespace&#34;</span>, <span style="color:#f60">12</span>);
@@ -373,7 +373,7 @@ root@local:~#</code></pre></div>
 <span style="color:#09f;font-style:italic">//[...]
 </span><span style="color:#09f;font-style:italic"></span>}</code></pre></div>
 <p>再次运行可以看到hostname已经变化。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# gcc -Wall namespace.c -o main.o <span style="color:#555">&amp;&amp;</span> ./main.o
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# gcc -Wall namespace.c -o main.o <span style="color:#555">&amp;&amp;</span> ./main.o
 程序开始:
 在子进程中!
 root@NewNamespace:~# <span style="color:#366">exit</span>
@@ -389,19 +389,20 @@ root@local:~#  &lt;- 回到原来的hostname</code></pre></div>
 <p>容器中进程间通信采用的方法包括常见的信号量、消息队列和共享内存。然而与虚拟机不同的是，容器内部进程间通信对宿主机来说，实际上是具有相同PID namespace中的进程间通信，因此需要一个唯一的标识符来进行区别。申请IPC资源就申请了这样一个全局唯一的32位ID，所以IPC namespace中实际上包含了系统IPC标识符以及实现POSIX消息队列的文件系统。在同一个IPC namespace下的进程彼此可见，而与其他的IPC namespace下的进程则互相不可见。</p>
 
 <p>IPC namespace在代码上的变化与UTS namespace相似，只是标识位有所变化，需要加上<code>CLONE_NEWIPC</code>参数。主要改动如下，其他部位不变，程序名称改为<code>ipc.c</code>。测试方法参考自：<a href="http://crosbymichael.com/creating-containers-part-1.html">http://crosbymichael.com/creating-containers-part-1.html</a></p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#09f;font-style:italic">//[...]
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#09f;font-style:italic">//[...]
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#078;font-weight:bold">int</span> child_pid <span style="color:#555">=</span> clone(child_main, child_stack<span style="color:#555">+</span>STACK_SIZE,
           CLONE_NEWIPC <span style="color:#555">|</span> CLONE_NEWUTS <span style="color:#555">|</span> SIGCHLD, <span style="color:#366">NULL</span>);
-<span style="color:#555">//</span>[...]</code></pre></div>
+<span style="color:#09f;font-style:italic">//[...]
+</span></code></pre></div>
 <p>我们首先在shell中使用<code>ipcmk -Q</code>命令创建一个message queue。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# ipcmk -Q</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# ipcmk -Q</code></pre></div>
 <p>通过<code>ipcs -q</code>可以查看到已经开启的message queue，序号为<code>32769</code>。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# ipcs -q
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# ipcs -q
 ------ Message Queues --------
 key        msqid   owner   perms   used-bytes   messages
 0x4cf5e29f <span style="color:#f60">32769</span>   root    <span style="color:#f60">644</span>     <span style="color:#f60">0</span>            <span style="color:#f60">0</span></code></pre></div>
 <p>然后我们可以编译运行加入了IPC namespace隔离的<code>ipc.c</code>，在新建的子进程中调用的<code>shell</code>中执行<code>ipcs -q</code>查看message queue。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# gcc -Wall ipc.c -o ipc.o <span style="color:#555">&amp;&amp;</span> ./ipc.o
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# gcc -Wall ipc.c -o ipc.o <span style="color:#555">&amp;&amp;</span> ./ipc.o
 程序开始:
 在子进程中!
 root@NewNamespace:~# ipcs -q
@@ -424,13 +425,14 @@ root@NewNamespace:~# <span style="color:#366">exit</span>
 </ul>
 
 <p>到这里，可能你已经联想到一种在外部监控Docker中运行程序的方法了，就是监控Docker Daemon所在的PID namespace下的所有进程即其子进程，再进行删选即可。 下面我们通过运行代码来感受一下PID namespace的隔离效果。修改上文的代码，加入PID namespace的标识位，并把程序命名为<code>pid.c</code>。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#09f;font-style:italic">//[...]
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#09f;font-style:italic">//[...]
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#078;font-weight:bold">int</span> child_pid <span style="color:#555">=</span> clone(child_main, child_stack<span style="color:#555">+</span>STACK_SIZE,
           CLONE_NEWPID <span style="color:#555">|</span> CLONE_NEWIPC <span style="color:#555">|</span> CLONE_NEWUTS 
           <span style="color:#555">|</span> SIGCHLD, <span style="color:#366">NULL</span>);
-<span style="color:#555">//</span>[...]</code></pre></div>
+<span style="color:#09f;font-style:italic">//[...]
+</span></code></pre></div>
 <p>编译运行可以看到如下结果。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# gcc -Wall pid.c -o pid.o <span style="color:#555">&amp;&amp;</span> ./pid.o
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# gcc -Wall pid.c -o pid.o <span style="color:#555">&amp;&amp;</span> ./pid.o
 程序开始:
 在子进程中!
 root@NewNamespace:~# <span style="color:#366">echo</span> <span style="color:#033">$$</span>
@@ -439,7 +441,7 @@ root@NewNamespace:~# <span style="color:#366">exit</span>
 <span style="color:#366">exit</span>
 已退出</code></pre></div>
 <p>打印<code>$$</code>可以看到shell的PID，退出后如果再次执行可以看到效果如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# <span style="color:#366">echo</span> <span style="color:#033">$$</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@local:~# <span style="color:#366">echo</span> <span style="color:#033">$$</span>
 <span style="color:#f60">17542</span></code></pre></div>
 <p>已经回到了正常状态。可能有的读者在子进程的shell中执行了<code>ps aux</code> <code>top</code>之类的命令，发现还是可以看到所有父进程的PID，那是因为我们还没有对文件系统进行隔离，<code>ps</code> <code>top</code>之类的命令调用的是真实系统下的<code>/proc</code>文件内容，看到的自然是所有的进程。 此外，与其他的namespace不同的是，为了实现一个稳定安全的容器，PID namespace还需要进行一些额外的工作才能确保其中的进程运行顺利。</p>
 
@@ -462,7 +464,7 @@ root@NewNamespace:~# <span style="color:#366">exit</span>
 <h3 id="3-挂载-proc-文件系统">（3）挂载<code>proc</code>文件系统</h3>
 
 <p>前文中已经提到，如果你在新的PID namespace中使用<code>ps</code>命令查看，看到的还是所有的进程，因为与PID直接相关的<code>/proc</code>文件系统（<code>procfs</code>）没有挂载到与原<code>/proc</code>不同的位置。所以如果你只想看到PID namespace本身应该看到的进程，需要重新挂载<code>/proc</code>，命令如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@NewNamespace:~# mount -t proc proc /proc
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">root@NewNamespace:~# mount -t proc proc /proc
 root@NewNamespace:~# ps a
   PID TTY      STAT   TIME COMMAND
     <span style="color:#f60">1</span> pts/1    S      0:00 /bin/bash
@@ -516,19 +518,20 @@ root@NewNamespace:~# ps a
 <p>共享挂载的应用场景非常明显，就是为了文件数据的共享所必须存在的一种挂载方式；从属挂载更大的意义在于某些“只读”场景；私有挂载其实就是纯粹的隔离，作为一个独立的个体而存在；不可绑定挂载则有助于防止没有必要的文件拷贝，如某个用户数据目录，当根目录被递归式的复制时，用户目录无论从隐私还是实际用途考虑都需要有一个不可被复制的选项。</p>
 
 <p>默认情况下，所有挂载都是私有的。设置为共享挂载的命令如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mount --make-shared &lt;mount-object&gt;</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mount --make-shared &lt;mount-object&gt;</code></pre></div>
 <p>从共享挂载克隆的挂载对象也是共享的挂载；它们相互传播挂载事件。 设置为从属挂载的命令如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mount --make-slave &lt;shared-mount-object&gt;</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mount --make-slave &lt;shared-mount-object&gt;</code></pre></div>
 <p>从从属挂载克隆的挂载对象也是从属的挂载，它也从属于原来的从属挂载的主挂载对象。 将一个从属挂载对象设置为共享/从属挂载，可以执行如下命令或者将其移动到一个共享挂载对象下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mount --make-shared &lt;slave-mount-object&gt;</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mount --make-shared &lt;slave-mount-object&gt;</code></pre></div>
 <p>如果你想把修改过的挂载对象重新标记为私有的，可以执行如下命令。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mount --make-private &lt;mount-object&gt;</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mount --make-private &lt;mount-object&gt;</code></pre></div>
 <p>通过执行以下命令，可以将挂载对象标记为不可绑定的。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mount --make-unbindable &lt;mount-object&gt;</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mount --make-unbindable &lt;mount-object&gt;</code></pre></div>
 <p>这些设置都可以递归式地应用到所有子目录中，如果读者感兴趣可以搜索到相关的命令。 在代码中实现mount namespace隔离与其他namespace类似，加上<code>CLONE_NEWNS</code>标识位即可。让我们再次修改代码，并且另存为<code>mount.c</code>进行编译运行。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">    <span style="color:#09f;font-style:italic">//[...] 
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">    <span style="color:#09f;font-style:italic">//[...] 
 </span><span style="color:#09f;font-style:italic"></span>      <span style="color:#078;font-weight:bold">int</span> child_pid <span style="color:#555">=</span> clone(child_main, child_stack<span style="color:#555">+</span>STACK_SIZE, CLONE_NEWNS <span style="color:#555">|</span> CLONE_NEWPID <span style="color:#555">|</span> CLONE_NEWIPC <span style="color:#555">|</span> CLONE_NEWUTS <span style="color:#555">|</span> SIGCHLD, <span style="color:#366">NULL</span>); 
-    <span style="color:#555">//</span>[...] </code></pre></div>
+    <span style="color:#09f;font-style:italic">//[...] 
+</span></code></pre></div>
 <p>执行的效果就如同PID namespace一节中“挂载<code>proc</code>文件系统”的执行结果，区别就是退出mount namespace以后，root namespace的文件系统不会被破坏，此处就不再演示了。</p>
 
 <h2 id="6-network-namespace"><strong>6. Network namespace</strong></h2>
@@ -551,24 +554,24 @@ root@NewNamespace:~# ps a
 <p>跟其他namespace类似，对network namespace的使用其实就是在创建的时候添加<code>CLONE_NEWNET</code>标识位。也可以通过命令行工具<code>ip</code>创建network namespace。在代码中建立和测试network namespace较为复杂，所以下文主要通过<code>ip</code>命令直观的感受整个network namespace网络建立和配置的过程。</p>
 
 <p>首先我们可以创建一个命名为<code>test_ns</code>的network namespace。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ip netns add test_ns</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ip netns add test_ns</span></code></pre></div>
 <p>当<code>ip</code>命令工具创建一个network namespace时，会默认创建一个回环设备（loopback interface：<code>lo</code>），并在<code>/var/run/netns</code>目录下绑定一个挂载点，这就保证了就算network namespace中没有进程在运行也不会被释放，也给系统管理员对新创建的network namespace进行配置提供了充足的时间。</p>
 
 <p>通过<code>ip netns exec</code>命令可以在新创建的network namespace下运行网络管理命令。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ip netns exec test_ns ip link list</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ip netns exec test_ns ip link list</span>
 3: lo: &lt;LOOPBACK&gt; mtu <span style="color:#f60">16436</span> qdisc noop state DOWN
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</code></pre></div>
 <p>上面的命令为我们展示了新建的namespace下可见的网络链接，可以看到状态是<code>DOWN</code>,需要再通过命令去启动。可以看到，此时执行<code>ping</code>命令是无效的。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ip netns exec test_ns ping 127.0.0.1</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ip netns exec test_ns ping 127.0.0.1</span>
 connect: Network is unreachable</code></pre></div>
 <p>启动命令如下，可以看到启动后再测试就可以ping通。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ip netns exec test_ns ip link set dev lo up</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ip netns exec test_ns ip link set dev lo up</span>
 <span style="color:#09f;font-style:italic"># ip netns exec test_ns ping 127.0.0.1</span>
 PING 127.0.0.1 <span style="color:#555">(</span>127.0.0.1<span style="color:#555">)</span> 56<span style="color:#555">(</span>84<span style="color:#555">)</span> bytes of data.
 <span style="color:#f60">64</span> bytes from 127.0.0.1: <span style="color:#033">icmp_req</span><span style="color:#555">=</span><span style="color:#f60">1</span> <span style="color:#033">ttl</span><span style="color:#555">=</span><span style="color:#f60">64</span> <span style="color:#033">time</span><span style="color:#555">=</span>0.050 ms
 ...</code></pre></div>
 <p>这样只是启动了本地的回环，要实现与外部namespace进行通信还需要再建一个网络设备对，命令如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ip link add veth0 type veth peer name veth1</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ip link add veth0 type veth peer name veth1</span>
 <span style="color:#09f;font-style:italic"># ip link set veth1 netns test_ns</span>
 <span style="color:#09f;font-style:italic"># ip netns exec test_ns ifconfig veth1 10.1.1.1/24 up</span>
 <span style="color:#09f;font-style:italic"># ifconfig veth0 10.1.1.2/24 up</span></code></pre></div>
@@ -579,7 +582,7 @@ PING 127.0.0.1 <span style="color:#555">(</span>127.0.0.1<span style="color:#555
 </ul>
 
 <p>此时两边就可以互相连通了，效果如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ping 10.1.1.1</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ping 10.1.1.1</span>
 PING 10.1.1.1 <span style="color:#555">(</span>10.1.1.1<span style="color:#555">)</span> 56<span style="color:#555">(</span>84<span style="color:#555">)</span> bytes of data.
 <span style="color:#f60">64</span> bytes from 10.1.1.1: <span style="color:#033">icmp_req</span><span style="color:#555">=</span><span style="color:#f60">1</span> <span style="color:#033">ttl</span><span style="color:#555">=</span><span style="color:#f60">64</span> <span style="color:#033">time</span><span style="color:#555">=</span>0.095 ms
 ...
@@ -588,12 +591,12 @@ PING 10.1.1.2 <span style="color:#555">(</span>10.1.1.2<span style="color:#555">
 <span style="color:#f60">64</span> bytes from 10.1.1.2: <span style="color:#033">icmp_req</span><span style="color:#555">=</span><span style="color:#f60">1</span> <span style="color:#033">ttl</span><span style="color:#555">=</span><span style="color:#f60">64</span> <span style="color:#033">time</span><span style="color:#555">=</span>0.049 ms
 ...</code></pre></div>
 <p>读者有兴趣可以通过下面的命令查看，新的<code>test_ns</code>有着自己独立的路由和iptables。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic">#ip netns exec test_ns route</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic">#ip netns exec test_ns route</span>
 <span style="color:#09f;font-style:italic">#ip netns exec test_ns iptables -L</span></code></pre></div>
 <p>路由表中只有一条通向<code>10.1.1.2</code>的规则，此时如果要连接外网肯定是不可能的，你可以通过建立网桥或者NAT映射来决定这个问题。如果你对此非常感兴趣，可以阅读Docker网络相关文章进行更深入的讲解。</p>
 
 <p>做完这些实验，你还可以通过下面的命令删除这个network namespace。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ip netns delete netns1</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># ip netns delete netns1</span></code></pre></div>
 <p>这条命令会移除之前的挂载，但是如果namespace本身还有进程运行，namespace还会存在下去，直到进程运行结束。</p>
 
 <p>通过network namespace我们可以了解到，实际上内核创建了network namespace以后，真的是得到了一个被隔离的网络。但是我们实际上需要的不是这种完全的隔离，而是一个对用户来说透明独立的网络实体，我们需要与这个实体通信。所以Docker的网络在起步阶段给人一种非常难用的感觉，因为一切都要自己去实现、去配置。你需要一个网桥或者NAT连接广域网，你需要配置路由规则与宿主机中其他容器进行必要的隔离，你甚至还需要配置防火墙以保证安全等等。所幸这一切已经有了较为成熟的方案，我们会在Docker网络部分进行详细的讲解。</p>
@@ -607,9 +610,9 @@ PING 10.1.1.2 <span style="color:#555">(</span>10.1.1.2<span style="color:#555">
 <p>Linux中，特权用户的user ID就是0，演示的最终我们将看到user ID非0的进程启动user namespace后user ID可以变为0。使用user namespace的方法跟别的namespace相同，即调用<code>clone()</code>或<code>unshare()</code>时加入<code>CLONE_NEWUSER</code>标识位。老样子，修改代码并另存为<code>userns.c</code>，为了看到用户<a href="http://man7.org/linux/man-pages/man7/capabilities.7.html">权限(Capabilities)</a>，可能你还需要安装一下<code>libcap-dev</code>包。</p>
 
 <p>首先包含以下头文件以调用<code>Capabilities</code>包。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#099">#include</span> <span style="color:#099">&lt;sys/capability.h&gt;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#099">#include</span> <span style="color:#099">&lt;sys/capability.h&gt;</span></code></pre></div>
 <p>其次在子进程函数中加入<code>geteuid()</code>和<code>getegid()</code>得到namespace内部的user ID，其次通过<code>cap_get_proc()</code>得到当前进程的用户拥有的权限，并通过<code>cap_to_text（）</code>输出。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#078;font-weight:bold">int</span> <span style="color:#c0f">child_main</span>(<span style="color:#078;font-weight:bold">void</span><span style="color:#555">*</span> args) {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#078;font-weight:bold">int</span> <span style="color:#c0f">child_main</span>(<span style="color:#078;font-weight:bold">void</span><span style="color:#555">*</span> args) {
         printf(<span style="color:#c30">&#34;在子进程中!</span><span style="color:#c30;font-weight:bold">\n</span><span style="color:#c30">&#34;</span>);
         cap_t caps;
         printf(<span style="color:#c30">&#34;eUID = %ld;  eGID = %ld;  &#34;</span>,
@@ -620,17 +623,18 @@ PING 10.1.1.2 <span style="color:#555">(</span>10.1.1.2<span style="color:#555">
         <span style="color:#069;font-weight:bold">return</span> <span style="color:#f60">1</span>;
 }</code></pre></div>
 <p>在主函数的<code>clone()</code>调用中加入我们熟悉的标识符。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#09f;font-style:italic">//[...]
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#09f;font-style:italic">//[...]
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#078;font-weight:bold">int</span> child_pid <span style="color:#555">=</span> clone(child_main, child_stack<span style="color:#555">+</span>STACK_SIZE,
             CLONE_NEWUSER <span style="color:#555">|</span> SIGCHLD, <span style="color:#366">NULL</span>);
-<span style="color:#555">//</span>[...]</code></pre></div>
+<span style="color:#09f;font-style:italic">//[...]
+</span></code></pre></div>
 <p>至此，第一部分的代码修改就结束了。在编译之前我们先查看一下当前用户的<code>uid</code>和<code>guid</code>，请注意此时我们是普通用户。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ id -u
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ id -u
 <span style="color:#f60">1000</span>
 $ id -g
 <span style="color:#f60">1000</span></code></pre></div>
 <p>然后我们开始编译运行，并进行新建的user namespace，你会发现shell提示符前的用户名已经变为<code>nobody</code>。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">sun@ubuntu$ gcc userns.c -Wall -lcap -o userns.o <span style="color:#555">&amp;&amp;</span> ./userns.o
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">sun@ubuntu$ gcc userns.c -Wall -lcap -o userns.o <span style="color:#555">&amp;&amp;</span> ./userns.o
 程序开始:
 在子进程中!
 <span style="color:#033">eUID</span> <span style="color:#555">=</span> 65534;  <span style="color:#033">eGID</span> <span style="color:#555">=</span> 65534;  capabilities: <span style="color:#555">=</span> cap_chown,cap_dac_override,<span style="color:#555">[</span>...<span style="color:#555">]</span>37+ep  &lt;&lt;--此处省略部分输出，已拥有全部权限
@@ -645,7 +649,7 @@ nobody@ubuntu$ </code></pre></div>
 </ul>
 
 <p>接下来我们就要进行用户绑定操作，通过在<code>/proc/[pid]/uid_map</code>和<code>/proc/[pid]/gid_map</code>两个文件中写入对应的绑定信息可以实现这一点，格式如下。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">ID<span style="color:#555">-</span>inside<span style="color:#555">-</span>ns   ID<span style="color:#555">-</span>outside<span style="color:#555">-</span>ns   length</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">ID<span style="color:#555">-</span>inside<span style="color:#555">-</span>ns   ID<span style="color:#555">-</span>outside<span style="color:#555">-</span>ns   length</code></pre></div>
 <p>写这两个文件需要注意以下几点。</p>
 
 <ul>
@@ -655,7 +659,7 @@ nobody@ubuntu$ </code></pre></div>
 </ul>
 
 <p>明白了上述原理，我们再次修改代码，添加设置uid和guid的函数。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#09f;font-style:italic">//[...]
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#09f;font-style:italic">//[...]
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#078;font-weight:bold">void</span> <span style="color:#c0f">set_uid_map</span>(pid_t pid, <span style="color:#078;font-weight:bold">int</span> inside_id, <span style="color:#078;font-weight:bold">int</span> outside_id, <span style="color:#078;font-weight:bold">int</span> length) {
     <span style="color:#078;font-weight:bold">char</span> path[<span style="color:#f60">256</span>];
     sprintf(path, <span style="color:#c30">&#34;/proc/%d/uid_map&#34;</span>, getpid());
@@ -682,9 +686,10 @@ nobody@ubuntu$ </code></pre></div>
     execv(child_args[<span style="color:#f60">0</span>], child_args);
     <span style="color:#069;font-weight:bold">return</span> <span style="color:#f60">1</span>;
 }
-<span style="color:#555">//</span>[...]</code></pre></div>
+<span style="color:#09f;font-style:italic">//[...]
+</span></code></pre></div>
 <p>编译后即可看到user已经变成了<code>root</code>。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ gcc userns.c -Wall -lcap -o usernc.o <span style="color:#555">&amp;&amp;</span> ./usernc.o
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ gcc userns.c -Wall -lcap -o usernc.o <span style="color:#555">&amp;&amp;</span> ./usernc.o
 程序开始:
 在子进程中!
 <span style="color:#033">eUID</span> <span style="color:#555">=</span> 0;  <span style="color:#033">eGID</span> <span style="color:#555">=</span> 0;  capabilities: <span style="color:#555">=</span> <span style="color:#555">[</span>...<span style="color:#555">]</span>,37+ep

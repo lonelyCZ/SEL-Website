@@ -18,7 +18,7 @@
   
   <meta name="description" content="根据官方的定义：runC是一个根据OCI标准创建并运行容器的CLI tool。 Docker就是基于runC创建的，简单地说，runC是Docker中最为核心的部分，容器的创建，运行，销毁等等操作最终都将通过调用runC完成。本文以代码走读的形式帮助读者理解runC创建并运行一个容器内部机制。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -224,7 +224,7 @@
 <h3 id="1-1-利用runc运行busybox容器">1.1 利用runC运行busybox容器</h3>
 
 <p>下载并编译runC</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># create a &#39;github.com/opencontainers&#39; in your GOPATH/src</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># create a &#39;github.com/opencontainers&#39; in your GOPATH/src</span>
 <span style="color:#366">cd</span> github.com/opencontainers
 git clone https://github.com/opencontainers/runc
 <span style="color:#366">cd</span> runc
@@ -232,7 +232,7 @@ git clone https://github.com/opencontainers/runc
 make
 sudo make install</code></pre></div>
 <p>创建容器的根文件系统</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># create the top most bundle directory</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># create the top most bundle directory</span>
 mkdir /mycontainer
 <span style="color:#366">cd</span> /mycontainer
 
@@ -242,15 +242,15 @@ mkdir rootfs
 <span style="color:#09f;font-style:italic"># export busybox via Docker into the rootfs directory</span>
 docker <span style="color:#366">export</span> <span style="color:#069;font-weight:bold">$(</span>docker create busybox<span style="color:#069;font-weight:bold">)</span> | tar -C rootfs -xvf -</code></pre></div>
 <p>利用runC的spec命令创建默认的配置文件config.json，其中包含了创建一个容器所需的所有配置信息</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">runc spec</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">runc spec</code></pre></div>
 <p>利用runC运行busybox容器</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># run as root</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#09f;font-style:italic"># run as root</span>
 <span style="color:#366">cd</span> /mycontainer
 runc run mycontainerid
 / <span style="color:#09f;font-style:italic"># ls</span>
 bin　　dev　　etc　　home　　proc　　root　　sys　　tmp　　usr　　var</code></pre></div>
 <p>可以看到，容器成功运行，此时我们打开另一个终端观察容器的运行状态</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">runc list
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">runc list
 ID              PID         STATUS      BUNDLE         CREATED                          OWNER
 mycontainerid   <span style="color:#f60">1070</span>        running     /mycontainer   2017-12-20T12:26:30.159978871Z   root</code></pre></div>
 <p>事实上，<code>runc run</code>是一个复合命令，它包含了容器的创建<code>runc create</code>，启动<code>runc start</code>以及在退出之后对容器进行的销毁<code>runc delete</code>，从演示的角度看它是最为直观的。但是如果想要深入理解runC内部的实现机制，将容器的创建，启动，销毁三个步骤分开，显然会让整个过程的分析更为简单和易于接受</p>
@@ -260,7 +260,7 @@ mycontainerid   <span style="color:#f60">1070</span>        running     /myconta
 <h2 id="2-源码分析">2 源码分析</h2>
 
 <p>首先，我们来对runC的整体代码结构做一个宏观的把控：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#555">[</span>root@VM_68_206_centos runc<span style="color:#555">]</span><span style="color:#09f;font-style:italic"># tree -L 1 -F --dirsfirst</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#555">[</span>root@VM_68_206_centos runc<span style="color:#555">]</span><span style="color:#09f;font-style:italic"># tree -L 1 -F --dirsfirst</span>
 .
 |-- contrib/
 |-- libcontainer/
@@ -284,7 +284,7 @@ mycontainerid   <span style="color:#f60">1070</span>        running     /myconta
 <p>这样一来，runC的代码结构就非常清晰了。我们知道，runC是符合OCI标准的容器运行时。不难猜出，它本质上是对<code>libcontainer</code>的一层薄薄的封装。它会先读取符合OCI标准的容器配置，再将其转换成与<code>libcontainer</code>兼容的格式，最后将转换后的配置交由<code>libcontainer</code>来完成具体的工作。</p>
 
 <h3 id="2-1-容器创建">2.1 容器创建</h3>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/create.go       
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/create.go       
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#555">...</span>
 spec, err <span style="color:#555">:=</span> <span style="color:#c0f">setupSpec</span>(context)
 <span style="color:#555">...</span>
@@ -296,7 +296,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
 <li><p>将容器配置从config.json文件加载到内存中，保存在一个类型为<a href="https://github.com/opencontainers/runtime-spec/blob/master/specs-go/config.go#L5">*specs.Spec</a> (Spec即为OCI标准的容器配置在内存中的表现形式)的结构体中</p></li>
 
 <li><p>调用<code>startContainer()</code>完成容器的创建工作，值得注意的是<code>runc run</code> , <code>runc create</code>以及<code>runc restore</code>最终都将调用该函数，只是第三个参数不同而已，对于<code>runc create</code>，该参数为<code>CT_ACT_CREATE</code>，表示首次创建容器。接下来程序的执行路径将因该参数的不同而有所不同。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/utils_linux.go
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/utils_linux.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">startContainer</span>(context <span style="color:#555">*</span>cli.Context, spec <span style="color:#555">*</span>specs.Spec, action CtAct, criuOpts <span style="color:#555">*</span>libcontainer.CriuOpts) (<span style="color:#078;font-weight:bold">int</span>, <span style="color:#078;font-weight:bold">error</span>) {
     <span style="color:#09f;font-style:italic">// 从参数中获取容器的id
 </span><span style="color:#09f;font-style:italic"></span>    id <span style="color:#555">:=</span> context.<span style="color:#c0f">Args</span>().<span style="color:#c0f">First</span>()
@@ -326,7 +326,8 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
     }
     <span style="color:#069;font-weight:bold">return</span> r.<span style="color:#c0f">run</span>(spec.Process)
 }
-    </code></pre></div></li>
+    
+</code></pre></div></li>
 </ol>
 
 <p><code>startContainer</code>的工作由如下三部分组成：</p>
@@ -337,7 +338,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
 <li><p>调用<code>createContainer</code> ，根据spec中Container相关的内容，调用<code>libcontainer</code> 创建容器对象，且容器的状态设置为<code>Stopped</code>。此时的容器仅仅只是一个内存中的数据结构，并没有与之对应的进程</p></li>
 
 <li><p>创建<code>runner</code>对象并调用相应的<code>run</code>方法，该对象会将spec中的Process转换成<code>libcontainer</code>兼容的模式，并对容器的IO进行配置</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/utils_linux.go
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/utils_linux.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (r <span style="color:#555">*</span>runner) <span style="color:#c0f">run</span>(config <span style="color:#555">*</span>specs.Process) (<span style="color:#078;font-weight:bold">int</span>, <span style="color:#078;font-weight:bold">error</span>) {
     <span style="color:#555">...</span>
     <span style="color:#09f;font-style:italic">// 将spec的Process转换为libcontainer要求的Process配置格式
@@ -371,7 +372,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
 </ol>
 
 <p>到此为止，我们已经将OCI格式的配置，不管是Container还是Process都转换成了<code>libcontainer</code>要求的格式。接着我们将深入<code>libcontainer</code>，真正完成容器实例的创建工作。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/container_linux.go
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/container_linux.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (c <span style="color:#555">*</span>linuxContainer) <span style="color:#c0f">Start</span>(process <span style="color:#555">*</span>Process) <span style="color:#078;font-weight:bold">error</span> {
     <span style="color:#555">...</span>
     status, err <span style="color:#555">:=</span> c.<span style="color:#c0f">currentStatus</span>()
@@ -394,7 +395,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
 <p><code>Start</code>方法仅仅只是对<code>start</code>的一个封装并且会在容器状态为<code>Stopped</code>时（即新建容器时），创建一个路径为<code>/run/runc/$ID/exec.fifo</code>的管道文件，它的作用我们会在后文中详细描述。</p>
 
 <p>值得注意的是<code>start</code>方法的第二个参数对容器的状态进行了判断。事实上，命令<code>runc create</code>和<code>runc exec</code>的代码的执行路径是类似的，它俩共享了大部分的代码。因此，这里我们需要对容器的状态进行判断，如果容器的状态为<code>Stopped</code>说明接下来应当进行容器的创建，否则应当在已有容器中exec一个新进程。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/container_linux.go
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/container_linux.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (c <span style="color:#555">*</span>linuxContainer) <span style="color:#c0f">start</span>(process <span style="color:#555">*</span>Process, isInit <span style="color:#078;font-weight:bold">bool</span>) <span style="color:#078;font-weight:bold">error</span> {
     <span style="color:#555">...</span>
     parent, err <span style="color:#555">:=</span> c.<span style="color:#c0f">newParentProcess</span>(process, isInit)
@@ -442,7 +443,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
 <li><p>调用<code>parentProcess</code>的<code>start</code>方法，它真正完成容器进程的创建以及初始化工作</p></li>
 
 <li><p>如果<code>isInit</code>参数为true，则说明执行的命令为<code>runc create</code>，更新容器状态为<code>Created</code>，并且如果定义了hooks（回调函数），则还需要执行<code>PostStart</code>类型的hook函数。否则，如果执行的命令为<code>runc exec</code>，则更新容器状态为<code>Running</code></p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/container_linux.go
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/container_linux.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (c <span style="color:#555">*</span>linuxContainer) <span style="color:#c0f">newParentProcess</span>(p <span style="color:#555">*</span>Process, doInit <span style="color:#078;font-weight:bold">bool</span>) (parentProcess, <span style="color:#078;font-weight:bold">error</span>) {
     parentPipe, childPipe, err <span style="color:#555">:=</span> utils.<span style="color:#c0f">NewSockPair</span>(<span style="color:#c30">&#34;init&#34;</span>)
     <span style="color:#555">...</span>
@@ -464,7 +465,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
 <p><code>newParentProcess</code>首先创建了一个名为<code>init</code>的管道，它一方面会在创建容器时给容器的初始化进程传输容器的配置信息，另一方面它也会用于runC和容器进程之间的同步。</p>
 
 <p>之后，它会调用<code>commandTemplate</code>创建容器初始化进程的运行模板，如下所示：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/container_linux.go
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/container_linux.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (c <span style="color:#555">*</span>linuxContainer) <span style="color:#c0f">commandTemplate</span>(p <span style="color:#555">*</span>Process, childPipe <span style="color:#555">*</span>os.File) (<span style="color:#555">*</span>exec.Cmd, <span style="color:#078;font-weight:bold">error</span>) {
     cmd <span style="color:#555">:=</span> exec.<span style="color:#c0f">Command</span>(c.initPath, c.initArgs[<span style="color:#f60">1</span>:]<span style="color:#555">...</span>)
     cmd.Args[<span style="color:#f60">0</span>] = c.initArgs[<span style="color:#f60">0</span>]
@@ -485,7 +486,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
 <p>到这里，我们脑海中可能会浮现出另一个问题：<code>c.initPath</code>应该就是容器初始化进程的二进制文件的路径，那么它是一个独立于runC的二进制文件么？它又是放在哪的呢？事实上，<code>c.initPath</code>在上文初始化Container对象时会被初始化为<code>/proc/self/exe</code>，而<code>c.initArgs</code>被设置为<code>init</code> ，因此我们创建子进程的过程其实相当于执行了<code>runc init</code>这条命令。</p>
 
 <p>如果执行的命令为<code>runc create</code>，还需要将前文提到的<code>exec.fifo</code>这个管道同样以环境变量的形式传递到容器初始化进程中。最后，调用<code>newInitProcess</code>将所有配置都填充至结构体<code>initProcess</code>中。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/process_linux.go
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/process_linux.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (p <span style="color:#555">*</span>initProcess) <span style="color:#c0f">start</span>() <span style="color:#078;font-weight:bold">error</span> {
     <span style="color:#555">...</span>
     <span style="color:#09f;font-style:italic">// 启动子进程
@@ -553,7 +554,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
 <p><code>initProcess</code>结构的<code>start</code>方法真正完成了容器进程的创建，并通过<code>init</code>管道协助其完成初始化工作。该方法首先调用<code>p.cmd.Start()</code>创建一个独立的进程，执行命令<code>runc init</code>。接着通过<code>init</code>管道将容器配置<code>p.bootstrapData</code>写入管道中。然后再调用<code>parseSync()</code>函数，通过<code>init</code>管道与容器初始化进程进行同步，待其初始化完成之后，执行<code>PreStart Hook</code>等一些回调操作。最后，关闭<code>init</code>管道，容器创建完成。</p>
 
 <p>runC端在创建容器时所做的工作我们已经基本了解了，下面我们来看看<code>runc init</code>，也就是容器初始化进程具体完成了哪些工作。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/factory_linux.go
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/factory_linux.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (l <span style="color:#555">*</span>LinuxFactory) <span style="color:#c0f">StartInitialization</span>() (err <span style="color:#078;font-weight:bold">error</span>) {
     <span style="color:#069;font-weight:bold">var</span> (
         pipefd, fifofd <span style="color:#078;font-weight:bold">int</span>
@@ -593,7 +594,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
 </span><span style="color:#09f;font-style:italic"></span>    <span style="color:#069;font-weight:bold">return</span> i.<span style="color:#c0f">Init</span>()
 }</code></pre></div>
 <p>作为容器的初始化进程，必须先通过<code>init</code>管道获取配置才能进行下一步的工作。显然，我们首先要做的就是从环境变量中获取与runC进程进行交互的管道的信息，包括<code>init</code>管道。对于<code>runc create</code>还有管道<code>exec.fifo</code>，即上方代码中的<code>fifofd</code>。紧接着，调用函数<code>newContainerInit</code>，创建用于初始化的接口对象<code>initer</code>，该函数的代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/init_linux.go
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/init_linux.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">newContainerInit</span>(t initType, pipe <span style="color:#555">*</span>os.File, consoleSocket <span style="color:#555">*</span>os.File, fifoFd <span style="color:#078;font-weight:bold">int</span>) (initer, <span style="color:#078;font-weight:bold">error</span>) {
     <span style="color:#069;font-weight:bold">var</span> config <span style="color:#555">*</span>initConfig
     <span style="color:#09f;font-style:italic">// 从管道中读取config
@@ -620,7 +621,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
     <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">nil</span>, fmt.<span style="color:#c0f">Errorf</span>(<span style="color:#c30">&#34;unknown init type %q&#34;</span>, t)
 }</code></pre></div>
 <p>该函数的作用非常明显，从<code>init</code>管道中读取容器配置，解析至<code>initConfig</code>中。对于<code>runc create</code>，创建<code>linuxStandardInit</code>结构，将各种配置信息写入其中。最后，调用该结构的<code>Init</code>方法真正对容器进行初始化。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/standard_init_linux.go
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/standard_init_linux.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> (l <span style="color:#555">*</span>linuxStandardInit) <span style="color:#c0f">Init</span>() <span style="color:#078;font-weight:bold">error</span> {
     <span style="color:#555">...</span>
     <span style="color:#09f;font-style:italic">// 配置network, 配置路由等等
@@ -667,7 +668,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
 <p><code>Init</code>方法真正完成了对容器的初始化工作，它会对容器的网络，路由，hostname等一系列属性进行配置。这些工作一般都是直接通过系统调用设置完成的，因此我们就不再细述了。接下来我们将重点描述容器初始化进程和其父进程，也就是runC进程的同步过程。</p>
 
 <p>我们都知道，每个容器都有自己的根文件系统，到目前为止我们依然还是宿主机文件系统的视角，那么文件系统根目录的切换是在哪里进行的呢？答案是显然的，<code>prepareRootfs</code>。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/rootfs_linux.go
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// runc/libcontainer/rootfs_linux.go
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">prepareRootfs</span>(pipe io.ReadWriter, iConfig <span style="color:#555">*</span>initConfig) (err <span style="color:#078;font-weight:bold">error</span>) {
     <span style="color:#555">...</span>
     <span style="color:#09f;font-style:italic">// 配置mounts, dev
@@ -697,7 +698,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
 <h3 id="2-2-容器启动">2.2 容器启动</h3>
 
 <p>相对于容器的创建，容器的启动就非常简单了</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#09f;font-style:italic">// runc/start.go    
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#09f;font-style:italic">// runc/start.go    
 </span><span style="color:#09f;font-style:italic"></span>    container, err <span style="color:#555">:=</span> <span style="color:#c0f">getContainer</span>(context)
     <span style="color:#555">...</span>
     status, err <span style="color:#555">:=</span> container.<span style="color:#c0f">Status</span>()
@@ -713,7 +714,7 @@ status, err <span style="color:#555">:=</span> <span style="color:#c0f">startCon
         <span style="color:#069;font-weight:bold">return</span> fmt.<span style="color:#c0f">Errorf</span>(<span style="color:#c30">&#34;cannot start a container in the %s state\n&#34;</span>, status)
     }</code></pre></div>
 <p>当我们执行<code>runc start</code>命令时，我们首先会获取相应容器的状态。显然，只有状态为<code>Created</code>的容器才是合法的，此时需要调用容器的<code>Exec</code>方法。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (c <span style="color:#555">*</span>linuxContainer) <span style="color:#c0f">exec</span>() <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> (c <span style="color:#555">*</span>linuxContainer) <span style="color:#c0f">exec</span>() <span style="color:#078;font-weight:bold">error</span> {
     <span style="color:#09f;font-style:italic">// 获取exec.fifo的路径
 </span><span style="color:#09f;font-style:italic"></span>    path <span style="color:#555">:=</span> filepath.<span style="color:#c0f">Join</span>(c.root, execFifoFilename)
 

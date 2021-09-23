@@ -18,7 +18,7 @@
   
   <meta name="description" content="本文主要介绍了Docker容器管理的方式libcontainer，从libcontainer的使用到源码实现方式。我们深入到容器进程内部，感受到了libcontainer较为全面的设计。总体而言，libcontainer本身主要分为三大块工作内容，一是容器的创建及初始化，二是容器生命周期管理，三则是进程管理，调用方为Docker的execdriver。容器的监控主要通过cgroups的状态统计信息，未来会加入进程追踪等更丰富的功能。另一方面，libcontainer在安全支持方面也为用户尽可能多的提供了支持和选择。遗憾的是，容器安全的配置需要用户对系统安全本身有足够高的理解，user namespace也尚未支持，可见libcontainer依旧有很多工作要完善。但是Docker社区的火热也自然带动了大家对libcontainer的关注，相信在不久的将来，libcontainer就会变得更安全、更易用。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>

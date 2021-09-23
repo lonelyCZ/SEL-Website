@@ -18,7 +18,7 @@
   
   <meta name="description" content="本文将试图以CloudFoundry中的消息组件NATS为主要线索，以在CF中广泛使用的并发和网络编程框架EventMachine为侧重，来串联整个CF主线功能的工作原理，力求能用简单直接的方式描述出较多的架构细节和系统设计。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -278,7 +278,7 @@
 <p>NATS作为CF的神经网络，负责者组件之间的通讯和交互工作： •NATS基于Topic •发布者以Topic发送消息 •订阅者订阅特定Topic并收到 这种策略下，发布者与订阅者不需要相互知道，只要按照订阅的主题进行发布，订阅者就能收到消息。</p>
 
 <p>每个CF组件的启动，很多都需要启动EventMachine和NAST，并在NATS启动过程中做下面几个事情： EM.epoll # EM默认使用select系统调用，所以这里往往使用处理能力更高的epoll调用</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#360">EM</span><span style="color:#555">.</span>run <span style="color:#069;font-weight:bold">do</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#360">EM</span><span style="color:#555">.</span>run <span style="color:#069;font-weight:bold">do</span>  
 <span style="color:#555">...</span>  
 <span style="color:#360">NATS</span><span style="color:#555">.</span>start(<span style="color:#fc3">:uri</span> <span style="color:#555">=&gt;</span> @config<span style="color:#555">[</span><span style="color:#c30">&#39;mbus&#39;</span><span style="color:#555">]</span>) <span style="color:#069;font-weight:bold">do</span>  
 configure_timers <span style="color:#09f;font-style:italic"># 设置基于EM的定时器</span>
@@ -321,7 +321,7 @@ configure_timers <span style="color:#09f;font-style:italic"># 设置基于EM的�
 </ol>
 
 <p>上图展示了Router的工作流程，它的原理其实很容易描述： 组件和应用实例均被注册到某个ULR上 Nginx通过lua脚本把lookup请求发送给一个由ruby代码建立的http server Server根据URL查询注册信息，选择某一具体的ip:port，转发请求 Session Sticky：将被转发给上次访问的应用实例 所以这里Router订阅的消息无外乎两种：register和unregister</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">setup_listeners</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">setup_listeners</span>  
 <span style="color:#360">NATS</span><span style="color:#555">.</span>subscribe(<span style="color:#c30">&#39;router.register&#39;</span>) { <span style="color:#555">|</span>msg<span style="color:#555">|</span>  
 msg_hash <span style="color:#555">=</span> <span style="color:#360">Yajl</span><span style="color:#555">::</span><span style="color:#360">Parser</span><span style="color:#555">.</span>parse(msg, <span style="color:#fc3">:symbolize_keys</span> <span style="color:#555">=&gt;</span> <span style="color:#069">true</span>)  
 <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">unless</span> uris <span style="color:#555">=</span> msg_hash<span style="color:#555">[</span><span style="color:#fc3">:uris</span><span style="color:#555">]</span>  
@@ -341,9 +341,9 @@ uris<span style="color:#555">.</span>each { <span style="color:#555">|</span>uri
 <p>这就是我们很熟悉的Router启动时打印出的一系列的register log</p>
 
 <p>Router中app的信息是需要不断轮询着的，所以会有一个check_registered_urls定时被执行。值得注意的是，在此期间会有这样的判断：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">to_drop <span style="color:#555">&lt;&lt;</span> droplet <span style="color:#069;font-weight:bold">if</span> ((start <span style="color:#555">-</span> droplet<span style="color:#555">[</span><span style="color:#fc3">:timestamp</span><span style="color:#555">]</span>) <span style="color:#555">&gt;</span> <span style="color:#360">MAX_AGE_STALE</span>)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">to_drop <span style="color:#555">&lt;&lt;</span> droplet <span style="color:#069;font-weight:bold">if</span> ((start <span style="color:#555">-</span> droplet<span style="color:#555">[</span><span style="color:#fc3">:timestamp</span><span style="color:#555">]</span>) <span style="color:#555">&gt;</span> <span style="color:#360">MAX_AGE_STALE</span>)</code></pre></div>
 <p>然后符合该条件的instance会被unregister掉。这里的“陈旧instance“是通过时间戳来判断的，默认2min内没有被更新时间戳的instance会被抛弃，而负责更新instance时间戳的工作由DEA负责。 在Router的这个部分中有一处EM与NATS的非常典型的用法：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">setup_sweepers</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">setup_sweepers</span>  
 @rps_timestamp <span style="color:#555">=</span> <span style="color:#360">Time</span><span style="color:#555">.</span>now  
 @current_num_requests <span style="color:#555">=</span> <span style="color:#f60">0</span>  
 <span style="color:#360">EM</span><span style="color:#555">.</span>add_periodic_timer(<span style="color:#360">RPS_SWEEPER</span>) { calc_rps }  
@@ -357,7 +357,7 @@ flush_active_apps
 <span style="color:#069;font-weight:bold">end</span>  
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>而在flush_active_apps这个方法中，我们看到了EM的一种使用模式：先使用defer将任务放到线程池中进行处理，但是在执行期间，又需要在主线程中通过NATS发布消息，于是使用到了next_tick回到Reactor周期中来执行：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">flush_active_apps</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">flush_active_apps</span>  
 <span style="color:#555">...</span> <span style="color:#555">...</span>
 
       <span style="color:#360">EM</span><span style="color:#555">.</span>defer <span style="color:#069;font-weight:bold">do</span>  
@@ -372,21 +372,21 @@ flush_active_apps
 <p>Router的另一个核心部分就是router/ lib/router/router_uls_server.rb，这个文件为Router建立起了负责处理来访URL的一个基于sinatra的HTTPserver （图中的upstream locator svc）。 见：<a href="https://github.com/cloudfoundry/router/blob/master/lib/router/router_uls_server.rb#L10">https://github.com/cloudfoundry/router/blob/master/lib/router/router_uls_server.rb#L10</a></p>
 
 <p>这部分的可读性非常强： Router首先解析该request body</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#09f;font-style:italic"># Parse request body</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#09f;font-style:italic"># Parse request body</span>
 
     uls_req <span style="color:#555">=</span> <span style="color:#360">JSON</span><span style="color:#555">.</span>parse(body, <span style="color:#fc3">:symbolize_keys</span> <span style="color:#555">=&gt;</span> <span style="color:#069">true</span>)  
     <span style="color:#069;font-weight:bold">raise</span> <span style="color:#360">ParserError</span> <span style="color:#069;font-weight:bold">if</span> uls_req<span style="color:#555">.</span>nil? <span style="color:#555">||</span> <span style="color:#555">!</span>uls_req<span style="color:#555">.</span>is_a?(<span style="color:#360">Hash</span>)  
     stats, url <span style="color:#555">=</span> uls_req<span style="color:#555">[</span><span style="color:#360">ULS_STATS_UPDATE</span><span style="color:#555">]</span>, uls_req<span style="color:#555">[</span><span style="color:#360">ULS_HOST_QUERY</span><span style="color:#555">]</span>  
     sticky <span style="color:#555">=</span> uls_req<span style="color:#555">[</span><span style="color:#360">ULS_STICKY_SESSION</span><span style="color:#555">]</span>  </code></pre></div>
 <p>如果访问类型是URL的话，直接在这个server上查询URL的注册信息：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#09f;font-style:italic"># Lookup a droplet</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#09f;font-style:italic"># Lookup a droplet</span>
 
 <span style="color:#069;font-weight:bold">unless</span> droplets <span style="color:#555">=</span> <span style="color:#360">Router</span><span style="color:#555">.</span>lookup_droplet(url)  
 <span style="color:#360">Router</span><span style="color:#555">.</span>log<span style="color:#555">.</span>debug <span style="color:#c30">&#34;No droplet registered for </span><span style="color:#a00">#{</span>url<span style="color:#a00">}</span><span style="color:#c30">&#34;</span>  
 <span style="color:#069;font-weight:bold">raise</span> <span style="color:#360">Sinatra</span><span style="color:#555">::</span><span style="color:#360">NotFound</span>  
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>然后做判断：如果来访的request是带session的，那么直接路由到上一次访问的instance中： droplet = check_original_droplet(droplets, host, port) 否则的话，从刚刚lookup到的droplet中随机选择一个。最后组装一个response以便client端获取正确的响应：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">uls_response <span style="color:#555">=</span> {  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">uls_response <span style="color:#555">=</span> {  
 <span style="color:#360">ULS_STICKY_SESSION</span> <span style="color:#555">=&gt;</span> new_sticky,  
 <span style="color:#360">ULS_BACKEND_ADDR</span> <span style="color:#555">=&gt;</span> <span style="color:#c30">&#34;</span><span style="color:#a00">#{</span>droplet<span style="color:#555">[</span><span style="color:#fc3">:host</span><span style="color:#555">]</span><span style="color:#a00">}</span><span style="color:#c30">:</span><span style="color:#a00">#{</span>droplet<span style="color:#555">[</span><span style="color:#fc3">:port</span><span style="color:#555">]</span><span style="color:#a00">}</span><span style="color:#c30">&#34;</span>,  
 <span style="color:#360">ULS_REQUEST_TAGS</span> <span style="color:#555">=&gt;</span> uls_req_tags,  
@@ -430,7 +430,7 @@ flush_active_apps
 <p>大家都知道DEA是应用运行的主场，也是整个PaaS中与应用关系最密切的部分，所以我们不妨先通过一个场景来描述其工作方式： 当我们启动一个app instance的时候，DEA节点会从指定位置下载一个Droplet的副本启动起来，如果我们扩展该app到10个instances，那这个Droplet就被会复制十份 CF通过NATS来“发现”DEA，DEA根据自己的“能力”来立即或推迟响应请求，instance会被下载到最先响应的DEA上启动 启动后的instance会被分配PID和响应端口，它会将自己的IP+Port信息注册到Router中对应的URL下 DEA负责把应用实例的运行状态定时报告给HealthManager 整个过程如下图所示：</p>
 
 <p>前面已经提到过，DEA start的时候，在../lib/dea/agent.rb除了初始化各个变量外，还会订阅一系列的消息，最后在向其他组件广播自己启动的消息：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#09f;font-style:italic"># Setup our listeners..</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#09f;font-style:italic"># Setup our listeners..</span>
 
 <span style="color:#360">NATS</span><span style="color:#555">.</span>subscribe(<span style="color:#c30">&#39;dea.status&#39;</span>) { <span style="color:#555">|</span>msg, reply<span style="color:#555">|</span> process_dea_status(msg, reply) }  
 <span style="color:#360">NATS</span><span style="color:#555">.</span>subscribe(<span style="color:#c30">&#39;droplet.status&#39;</span>) { <span style="color:#555">|</span>msg, reply<span style="color:#555">|</span> process_droplet_status(msg, reply) }  
@@ -460,7 +460,7 @@ send_advertise  </code></pre></div>
 <p>这里很多的订阅是带有reply的，这意味着回调方法执行结束后需要使用 NATS.publish(reply, response.to_json) 来返回处理结果。 所以，我们在这一部分按照NATS为主线进行研究是再适合不过的了。 send_heartbeat方法是DEA向HM发送心跳的部分，这个heartbeat是HM监视DEA中instance状态的重要部分，至于HM收到这个心跳之后做什么我们在HM的部分说。</p>
 
 <p>大多数方法都能直接从名字和逻辑中判断个差不多，这里我们单独看几个有意思的地方： 1、process_dea_discover(message, reply) &hellip;&hellip;</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#09f;font-style:italic"># Pull resource limits and make sure we can accomodate  </span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#09f;font-style:italic"># Pull resource limits and make sure we can accomodate  </span>
 limits <span style="color:#555">=</span> message_json<span style="color:#555">[</span><span style="color:#c30">&#39;limits&#39;</span><span style="color:#555">]</span>  
 mem_needed <span style="color:#555">=</span> limits<span style="color:#555">[</span><span style="color:#c30">&#39;mem&#39;</span><span style="color:#555">]</span>  
 droplet_id <span style="color:#555">=</span> message_json<span style="color:#555">[</span><span style="color:#c30">&#39;droplet&#39;</span><span style="color:#555">].</span>to_i  
@@ -473,7 +473,7 @@ delay <span style="color:#555">=</span> (<span style="color:#555">[</span>delay,
 <span style="color:#360">EM</span><span style="color:#555">.</span>add_timer(delay) { <span style="color:#360">NATS</span><span style="color:#555">.</span>publish(reply, @hello_message_json) }  
 <span style="color:#555">...</span> <span style="color:#555">...</span>  </code></pre></div>
 <p>我们可以看到DEA是如何响应“发现DEA”的：在前面check过空间，runtime等支持后，DEA首先判断DEA的内存是否足够，然后调用calculate_help_taint来计算一个延迟，最后使用根据这个延迟时间来做出响应。而这个计算延迟的部分就更清晰了：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">calculate_help_taint</span>(droplet_id)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">calculate_help_taint</span>(droplet_id)  
 <span style="color:#09f;font-style:italic"># Calculate taint based on droplet already running here, then memory and cpu usage, etc.  </span>
 taint_ms <span style="color:#555">=</span> <span style="color:#f60">0</span>  
 already_running <span style="color:#555">=</span> @droplets<span style="color:#555">[</span>droplet_id<span style="color:#555">]</span>  
@@ -490,7 +490,7 @@ taint_ms
 <p>这里还没有warden，所以这个mem百分比可能会出现超出limit的情况。</p>
 
 <p>由于订阅了xxx.start这样的消息Router启动后DEA向Router注册自己持有的instance，给HM发送heartbeat的过程也是类似的：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process_router_start</span>(message)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">process_router_start</span>(message)  
 <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">if</span> @shutting_down  
 @logger<span style="color:#555">.</span>debug(<span style="color:#c30">&#34;DEA received router start message: </span><span style="color:#a00">#{</span>message<span style="color:#a00">}</span><span style="color:#c30">&#34;</span>)  
 @droplets<span style="color:#555">.</span>each_value <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>instances<span style="color:#555">|</span>  
@@ -502,7 +502,7 @@ register_instance_with_router(instance) <span style="color:#069;font-weight:bold
 <p>在register_instance_with_router，DEA把instance的信息封装成msg_json，然后NATS.publish(&lsquo;router.register&rsquo;, msg)，由Router负责处理。</p>
 
 <p>2、从CC处下载droplet并在DEA建立本地可执行目录的方法：def stage_app_dir(bits_file, bits_uri, sha1, tgz_file, instance_dir, runtime) 在这个方法的一开始就对这个过程的思路做了说明：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#555">...</span> <span style="color:#555">...</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#555">...</span> <span style="color:#555">...</span>
 <span style="color:#09f;font-style:italic"># See if we have bits first..</span>
 
 <span style="color:#09f;font-style:italic"># What we do here, in order of preference..</span>
@@ -514,10 +514,10 @@ register_instance_with_router(instance) <span style="color:#069;font-weight:bold
 <span style="color:#09f;font-style:italic"># 3. Pull from http if needed.</span>
 <span style="color:#555">...</span> <span style="color:#555">...</span></code></pre></div>
 <p>DEA首先判断本地是否已经有了应用的可执行目录和所需的文件，如果已经存在，直接使用就好了</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">if</span> <span style="color:#360">File</span><span style="color:#555">.</span>exist?(tgz_file)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">if</span> <span style="color:#360">File</span><span style="color:#555">.</span>exist?(tgz_file)  
 @logger<span style="color:#555">.</span>debug(<span style="color:#c30">&#39;Found staged bits in local cache.&#39;</span>) </code></pre></div>
 <p>如果不存在，首先判断DEA与CC之间建立了共享文件系统的话，我们直接使用文件操作从CC的/var/vcap/shared/下把这些文件cp过来（需支持FUSE）</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">else</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">else</span>  
         <span style="color:#09f;font-style:italic"># If we have a shared volume from the CloudController we can see the bits  </span>
         <span style="color:#09f;font-style:italic"># directly, just link into our staged version.  </span>
         <span style="color:#069;font-weight:bold">if</span> <span style="color:#360">File</span><span style="color:#555">.</span>exist?(bits_file) <span style="color:#000;font-weight:bold">and</span> <span style="color:#000;font-weight:bold">not</span> @force_http_sharing  
@@ -529,7 +529,7 @@ register_instance_with_router(instance) <span style="color:#069;font-weight:bold
 这个方法会通过EM向下载URL发送HttpRequest，并以流的方式把文件解压写入到DEA本地的目录中。</p>
 
 <p>droplet下载并解压后，删除原来的压缩文件，然后还要绑定runtime才能运行：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">bind_local_runtime</span>(instance_dir, runtime_name)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#069;font-weight:bold">def</span> <span style="color:#c0f">bind_local_runtime</span>(instance_dir, runtime_name)  
 <span style="color:#555">...</span> <span style="color:#555">...</span>
 
       startup_contents <span style="color:#555">=</span> <span style="color:#360">File</span><span style="color:#555">.</span>read(startup)  
@@ -543,7 +543,7 @@ register_instance_with_router(instance) <span style="color:#069;font-weight:bold
 <p>上面方法会将VCAP_LOCAL_RUNTIME变量被替换成当前DEA runtime的可执行文件路径（比如这种：../cloudfoundry/.deployments/devbox/deploy/rubies/ruby-1.9.2-p180/bin/ruby）。从某种意义上来说，应用之间共享runtime在CF中是不可避免的；但从另一方面讲，这种对运行环境轻量级的封装不需要用户调用特定的API或导入外部依赖，其实是最大的优点。</p>
 
 <p>上述stage_app_dir的执行过程实际上交给一个fiber（协程）完成的。当stage_app_dir方法发现使用bits_uri下载droplet的工作是在进行中的（说明有其它DEA在download同一个droplet），它会通过Fiber.yield就可以挂起当前的下载直到被resume。同样，在stage_app_dir里负责下载方法download_app_bits中也是如此：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#555">...</span> <span style="color:#555">...</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#555">...</span> <span style="color:#555">...</span>
 
       f <span style="color:#555">=</span> <span style="color:#360">Fiber</span><span style="color:#555">.</span>current  
       @downloads_pending<span style="color:#555">[</span>sha1<span style="color:#555">]</span> <span style="color:#555">=</span> <span style="color:#555">[]</span>  
@@ -562,7 +562,7 @@ register_instance_with_router(instance) <span style="color:#069;font-weight:bold
 <p>当下载的请求发出后，先挂起当前调用自己的Fiber，当请求获得响应后在回调方法中完成剩余的文件操作并resume这个Fiber。</p>
 
 <p>3、最后一个提到的方法是monitor_apps，尽管没有warden的情况下资源监控的作用并不大，但鉴于这一点是我们必然会涉及的部分，还是稍作说明。 实际上负责搜集instance资源信息的是这个方法：monitor_apps_helper，而每个instance对应的进程资源则直接使用<code>ps axo pid=,ppid=,pcpu=,rss=,user=</code>来获得。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">metrics<span style="color:#555">.</span>each <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>key, value<span style="color:#555">|</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">metrics<span style="color:#555">.</span>each <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>key, value<span style="color:#555">|</span>  
 metric <span style="color:#555">=</span> value<span style="color:#555">[</span>instance<span style="color:#555">[</span>key<span style="color:#555">]]</span> <span style="color:#555">||=</span> {<span style="color:#fc3">:used_memory</span> <span style="color:#555">=&gt;</span> <span style="color:#f60">0</span>, <span style="color:#fc3">:reserved_memory</span> <span style="color:#555">=&gt;</span> <span style="color:#f60">0</span>,  
 <span style="color:#fc3">:used_disk</span> <span style="color:#555">=&gt;</span> <span style="color:#f60">0</span>, <span style="color:#fc3">:used_cpu</span> <span style="color:#555">=&gt;</span> <span style="color:#f60">0</span>}  
 metric<span style="color:#555">[</span><span style="color:#fc3">:used_memory</span><span style="color:#555">]</span> <span style="color:#555">+=</span> mem  
@@ -579,7 +579,7 @@ metric<span style="color:#555">[</span><span style="color:#fc3">:used_cpu</span>
 <h3 id="6-healthmanager">6、HealthManager</h3>
 
 <p>HM的功能和作用比较单一，而我们继续以NATS作为线索可以看到HM订阅的消息如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"> <span style="color:#360">NATS</span><span style="color:#555">.</span>subscribe(<span style="color:#c30">&#39;dea.heartbeat&#39;</span>) <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>message<span style="color:#555">|</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"> <span style="color:#360">NATS</span><span style="color:#555">.</span>subscribe(<span style="color:#c30">&#39;dea.heartbeat&#39;</span>) <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>message<span style="color:#555">|</span>  
     @logger<span style="color:#555">.</span>debug(<span style="color:#c30">&#34;heartbeat: </span><span style="color:#a00">#{</span>message<span style="color:#a00">}</span><span style="color:#c30">&#34;</span>)  
     process_heartbeat_message(message) <span style="color:#09f;font-style:italic"># 处理DEA发来的心跳  </span>
     <span style="color:#069;font-weight:bold">end</span>
@@ -603,7 +603,7 @@ metric<span style="color:#555">[</span><span style="color:#fc3">:used_cpu</span>
   process_health_message(message, reply) <span style="color:#09f;font-style:italic"># 处理查询HM health的消息  </span>
 <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
 <p>另外HM会定时执行analyze_all_apps来分析应用和instance的状态，该方法中使用了EM.next_tick来更有效率地执行这个分析过程，防止主进程阻塞在这里（参见前面EM扫盲的EM#next_tick部分）。在分析完成之后，应用的信息和状态会被注册到VCAP::Component.varz中。 在分析APP的方法中，HM需要关注的是droplet的状态和instance的状态。 如果发现instance的状态为down，而对应droplet的状态确是started，那HM会认为此instance需要restart，这时该instance的id会被记录到missing_indices中，然后HM调用start_instances(app_id, missing_indices)来启动对应droplet的一个instance。 当然，启动instance的工作是由CC来做的，所以HM只需要组装好start_msg，然后使用NATS来publish一个专门的消息：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">@logger<span style="color:#555">.</span>info(<span style="color:#c30">&#34;Requesting the start of missing instances: </span><span style="color:#a00">#{</span>start_message<span style="color:#a00">}</span><span style="color:#c30">&#34;</span>)  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">@logger<span style="color:#555">.</span>info(<span style="color:#c30">&#34;Requesting the start of missing instances: </span><span style="color:#a00">#{</span>start_message<span style="color:#a00">}</span><span style="color:#c30">&#34;</span>)  
 <span style="color:#360">NATS</span><span style="color:#555">.</span>publish(<span style="color:#c30">&#39;cloudcontrollers.hm.requests&#39;</span>, start_message<span style="color:#555">.</span>to_json) </code></pre></div>
 <p>这样，订阅了改主题消息的CC就会根据传来的msg启动一个新的instance。</p>
 
@@ -621,7 +621,7 @@ metric<span style="color:#555">[</span><span style="color:#fc3">:used_cpu</span>
 <p>cld_ctrl_url就是CC的URL，即我们熟知的api.vcap.me。最后，gateway会查看CC的响应是不是200。 对照CC的routers.rb文件，我们可以知道在接收到上述请求后CC的工作实际上是向数据库中插入一条（如果没有的话）这个gateway的信息，这样注册就生效了。 好了，剩余的CC与Service Gateway的交互工作也都是通过这条handler途径来进行的，您可以参考我们的这篇文章深入学习：Cloud Foundry Service Gateway源码分析</p>
 
 <p>现在回到我们基于NATS的gateway与service node的交互过程上来。 以NATS为主线，我们首先看一下Service Node的公共部分&hellip;/vcap-service-base/lib/base/node.rb的订阅，非常简单：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"> <span style="color:#c30">%w[provision unprovision bind unbind restore disable_instance  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"> <span style="color:#c30">%w[provision unprovision bind unbind restore disable_instance  
 </span><span style="color:#c30">enable_instance import_instance update_instance cleanupnfs_instance purge_orphan  
 </span><span style="color:#c30">]</span><span style="color:#555">.</span>each <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>op<span style="color:#555">|</span>  
 <span style="color:#366">eval</span> <span style="color:#c30">%[@node_nats.subscribe(&#34;</span><span style="color:#a00">#{</span>service_name<span style="color:#a00">}</span><span style="color:#c30">.</span><span style="color:#a00">#{</span>op<span style="color:#a00">}</span><span style="color:#c30">.</span><span style="color:#a00">#{</span>@node_id<span style="color:#a00">}</span><span style="color:#c30">&#34;) { |msg, reply| EM.defer{ on_</span><span style="color:#a00">#{</span>op<span style="color:#a00">}</span><span style="color:#c30">(msg, reply) } }]</span>  
@@ -630,13 +630,13 @@ metric<span style="color:#555">[</span><span style="color:#fc3">:used_cpu</span>
 <span style="color:#366">eval</span> <span style="color:#c30">%[@node_nats.subscribe(&#34;</span><span style="color:#a00">#{</span>service_name<span style="color:#a00">}</span><span style="color:#c30">.</span><span style="color:#a00">#{</span>op<span style="color:#a00">}</span><span style="color:#c30">&#34;) { |msg, reply| EM.defer{ on_</span><span style="color:#a00">#{</span>op<span style="color:#a00">}</span><span style="color:#c30">(msg, reply) } }]</span>  
 <span style="color:#069;font-weight:bold">end</span></code></pre></div>
 <p>第一个订阅需要node_id参数，订阅主题是在本node上进行的操作。而第二个订阅则只针对discover操作和check_orphan操作，这两个操作都是针对所有node的，所以没有id的区别。 按照老规矩，每个Service Node节点在启动后，都要使用NATS向外publish自己的信息。以MySQL为例，它需要发布的信息包括自己的id，支持的版本，service plan，还有这个node的capacity等。当然在Service Gateway中一定订阅了它需要的消息（文件位置：&hellip;/vcap-service-base/lib/base/provisioner.rb）：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"> <span style="color:#c30">%w[announce node_handles handles update_service_handle]</span><span style="color:#555">.</span>each <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>op<span style="color:#555">|</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"> <span style="color:#c30">%w[announce node_handles handles update_service_handle]</span><span style="color:#555">.</span>each <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>op<span style="color:#555">|</span>  
 <span style="color:#366">eval</span> <span style="color:#c30">%[@node_nats.subscribe(&#34;</span><span style="color:#a00">#{</span>service_name<span style="color:#a00">}</span><span style="color:#c30">.</span><span style="color:#a00">#{</span>op<span style="color:#a00">}</span><span style="color:#c30">&#34;) { |msg, reply| on_</span><span style="color:#a00">#{</span>op<span style="color:#a00">}</span><span style="color:#c30">(msg, reply) }]</span>  
 <span style="color:#069;font-weight:bold">end</span> </code></pre></div>
 <p>好了，现在provisioner的作用应该能了解了：如果说前面asynchronous_service_gateway.rb是Gateway与CC进行交互的部分，那么Provisioner就是Gateway与Service Node交互的部分了。这里的设计分层很清楚。 这样通过announce操作，ServiceGateway就能记录下所有Service Node的有用信息了。</p>
 
 <p>说完了sending announcement，我们现在简单回顾下create service操作到底是怎么执行的： CC把一个provsion request交给Service Gateway Gateway调用provisioner#provision_service(req) 来执行整个provision操作 所以provisioner#provision_service(request, prov_handle=nil, &amp;blk)方法就是创建service实例的核心部分： 首先，我们要从目前维护的nodes列表里挑选best_node 然后在这个node上执行provsion操作，这里才是我们关注的重点，请看这个方法：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"> subscription <span style="color:#555">=</span>  
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"> subscription <span style="color:#555">=</span>  
     @node_nats<span style="color:#555">.</span>request(<span style="color:#c30">&#34;</span><span style="color:#a00">#{</span>service_name<span style="color:#a00">}</span><span style="color:#c30">.provision.</span><span style="color:#a00">#{</span>best_node<span style="color:#a00">}</span><span style="color:#c30">&#34;</span>, prov_req<span style="color:#555">.</span>encode) <span style="color:#069;font-weight:bold">do</span> <span style="color:#555">|</span>msg<span style="color:#555">|</span>  
     <span style="color:#555">...</span> <span style="color:#555">...</span>  
     <span style="color:#069;font-weight:bold">end</span>  </code></pre></div>
@@ -649,7 +649,7 @@ metric<span style="color:#555">[</span><span style="color:#fc3">:used_cpu</span>
 </ol>
 
 <p>前面的create-service操作为我们创建了数据库，同时也生成了user，password信息，而bind-service操作实际上就是在之前创建的数据库中为我们之前生成的用户分配权限：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"> <span style="color:#c30">&#34;GRANT ALL ON </span><span style="color:#a00">#{</span><span style="color:#366">name</span><span style="color:#a00">}</span><span style="color:#c30">.* to </span><span style="color:#a00">#{</span>user<span style="color:#a00">}</span><span style="color:#c30">@&#39;%&#39; IDENTIFIED BY &#39;</span><span style="color:#a00">#{</span>password<span style="color:#a00">}</span><span style="color:#c30">&#39; WITH MAX_USER_CONNECTIONS </span><span style="color:#a00">#{</span>@max_user_conns<span style="color:#a00">}</span><span style="color:#c30">&#34;</span> </code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"> <span style="color:#c30">&#34;GRANT ALL ON </span><span style="color:#a00">#{</span><span style="color:#366">name</span><span style="color:#a00">}</span><span style="color:#c30">.* to </span><span style="color:#a00">#{</span>user<span style="color:#a00">}</span><span style="color:#c30">@&#39;%&#39; IDENTIFIED BY &#39;</span><span style="color:#a00">#{</span>password<span style="color:#a00">}</span><span style="color:#c30">&#39; WITH MAX_USER_CONNECTIONS </span><span style="color:#a00">#{</span>@max_user_conns<span style="color:#a00">}</span><span style="color:#c30">&#34;</span> </code></pre></div>
 <p>这样子持有这些credencial信息的应用实例就可以像普通的应用那样访问这个数据库了。</p>
 
 <h2 id="三-总结">三、总结</h2>

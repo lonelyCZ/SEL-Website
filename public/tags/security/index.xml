@@ -6,11 +6,7 @@
     <description>Recent content in security on 浙大SEL实验室</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 30 Jul 2015 13:41:07 +0000</lastBuildDate>
-    
-	<atom:link href="http://www.sel.zju.edu.cn/tags/security/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <lastBuildDate>Thu, 30 Jul 2015 13:41:07 +0000</lastBuildDate><atom:link href="http://www.sel.zju.edu.cn/tags/security/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>4S: Services Account, Secret, Security Context and Security in Kubernetes</title>
       <link>http://www.sel.zju.edu.cn/blog/2015/07/30/4s-services-account-secret-security-context-and-security-in-kubernetes/</link>

@@ -18,7 +18,7 @@
   
   <meta name="description" content="knative serving开发环境搭建。本文基官方knative serving的开发环境搭建文档，加自己的实践，给出以下knative serving开发环境的搭建方案。开始之前请确保已按上面的开发环境搭建文档搭好Kubernetes(1.10以上)和istio。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -226,7 +226,7 @@
 <p>knative serving组件采用ko实现自动化的镜像构建，并将构建好的镜像上传到指定镜像仓库中。因此我们需要安装一个简单的开发用私有镜像仓库。</p>
 
 <p>按照<a href="https://docs.docker.com/registry/deploying">这个docker官方文档</a>，下载并启动镜像仓库：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run -d -e <span style="color:#033">REGISTRY_HTTP_ADDR</span><span style="color:#555">=</span>0.0.0.0:5000 -p 5000:5000   --name registry registry:2</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run -d -e <span style="color:#033">REGISTRY_HTTP_ADDR</span><span style="color:#555">=</span>0.0.0.0:5000 -p 5000:5000   --name registry registry:2</code></pre></div>
 <p>只有制定了bind address为0.0.0.0才能让kubernetes集群中的其他节点也能访问到该registry。</p>
 
 <p>注意上面的镜像仓库默认对外提供http服务，如果需要提供https服务，则首先准备好https证书，然后按照<a href="https://docs.docker.com/registry/deploying/#run-an-externally-accessible-registry">这篇docker官方文档</a>配置镜像仓库。由于我们手头没有https证书，因此在这里不配置镜像仓库的https服务。</p>
@@ -237,12 +237,12 @@
 
 <ol>
 <li><p>在/etc/docker/daemon.json添加如下内容</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">{<span style="color:#bbb">
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">{<span style="color:#bbb">
 </span><span style="color:#bbb">  </span><span style="color:#c30">&#34;insecure-registries&#34;</span><span style="color:#bbb"> </span>:<span style="color:#bbb"> </span>[<span style="color:#c30">&#34;&lt;镜像仓库的ip地址&gt;:5000&#34;</span>]<span style="color:#bbb">
 </span><span style="color:#bbb"></span>}</code></pre></div></li>
 
 <li><p>如果是已经运行中的docker daemon，则需要如下指令重启docker daemon：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">systemctl daemon-reload
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">systemctl daemon-reload
 systemctl restart docker</code></pre></div></li>
 </ol>
 
@@ -252,17 +252,17 @@ systemctl restart docker</code></pre></div></li>
 
 <ol>
 <li><p>下载ko源码</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mkdir -p ~/go/src/github.com/google
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">mkdir -p ~/go/src/github.com/google
 <span style="color:#366">cd</span> ~/go/src/github.com/google
 git clone https://github.com/google/go-containerregistry.git</code></pre></div></li>
 
 <li><p>修改<code>serving/pkg/name/repository.go</code>第91行</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">reg, err <span style="color:#555">:=</span> <span style="color:#c0f">NewSecureRegistry</span>(registry, strict)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">reg, err <span style="color:#555">:=</span> <span style="color:#c0f">NewSecureRegistry</span>(registry, strict)</code></pre></div>
 <p>改为</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">reg, err <span style="color:#555">:=</span> <span style="color:#c0f">NewInsecureRegistry</span>(registry, strict)</code></pre></div></li>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">reg, err <span style="color:#555">:=</span> <span style="color:#c0f">NewInsecureRegistry</span>(registry, strict)</code></pre></div></li>
 
 <li><p>重新编译ko工具</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#366">cd</span> ~/go/src/github.com/google/go-containerregistry/cmd/ko
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#366">cd</span> ~/go/src/github.com/google/go-containerregistry/cmd/ko
 go build</code></pre></div>
 <p>完成后得到新的ko可执行文件</p></li>
 </ol>
@@ -270,9 +270,9 @@ go build</code></pre></div>
 <h2 id="修改ko配置">修改ko配置</h2>
 
 <p>修改ko保存镜像的repo+namespace名称：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#366">export</span> <span style="color:#033">KO_DOCKER_REPO</span><span style="color:#555">=</span>&lt;镜像仓库的ip地址地址&gt;:5000/knative</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#366">export</span> <span style="color:#033">KO_DOCKER_REPO</span><span style="color:#555">=</span>&lt;镜像仓库的ip地址地址&gt;:5000/knative</code></pre></div>
 <p>修改ko build镜像用到的基础镜像，在未来运行ko的目录下新建<code>.ko.yaml</code>文件，并添加如下内容：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">defaultBaseImage</span>:<span style="color:#bbb"> </span>&lt;镜像仓库的ip地址&gt;:<span style="color:#f60">5000</span>/distroless/base:latest</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">defaultBaseImage</span>:<span style="color:#bbb"> </span>&lt;镜像仓库的ip地址&gt;:5000/distroless/base:latest</code></pre></div>
 <h2 id="把镜像push到私有仓库上">把镜像push到私有仓库上</h2>
 
 <p>下载gcr.io/distroless/base:latest，执行docker tag把镜像重命名为 前面的名字，即<code>&lt;镜像仓库的ip地址&gt;:5000/distroless/base:latest</code></p>
@@ -280,7 +280,7 @@ go build</code></pre></div>
 <h2 id="部署knative-serving组件">部署knative serving组件</h2>
 
 <p>在Kubernetes masster上git clone knative serving代码，然后在master上执行如下命令来部署knative-serving组件</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">./ko apply -f ~/go/src/github.com/knative/serving/config/</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">./ko apply -f ~/go/src/github.com/knative/serving/config/</code></pre></div>
 <p>应该可以在几秒钟内完成，结束之后执行<code>kubectl get pods -n knative-serving</code>，可以得到部署成功的pod，状态为RUNNING：</p>
 
 <ol>

@@ -18,7 +18,7 @@
   
   <meta name="description" content="karmada是华为开源的云原生多云容器编排平台，目标是让开发者像使用单个k8s集群一样使用多k8s云。它的第一个release（v0.1.0）出现在2020年12月，而正式发布则是在2021年4月25日，在深圳召开的华为开发者大会（HDC.Cloud）2021上。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -240,7 +240,7 @@
 
 <ol>
 <li><p>安装基础工具</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">sudo apt-get update
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">sudo apt-get update
 sudo apt-get install <span style="color:#c30;font-weight:bold">\
 </span><span style="color:#c30;font-weight:bold"></span>	apt-transport-https <span style="color:#c30;font-weight:bold">\
 </span><span style="color:#c30;font-weight:bold"></span>	ca-certificates <span style="color:#c30;font-weight:bold">\
@@ -249,13 +249,13 @@ sudo apt-get install <span style="color:#c30;font-weight:bold">\
 </span><span style="color:#c30;font-weight:bold"></span>	lsb-release</code></pre></div></li>
 
 <li><p>安装docker的gpg key：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg</code></pre></div></li>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg</code></pre></div></li>
 
 <li><p>安装docker源</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#366">echo</span> <span style="color:#c30">&#34;deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian </span><span style="color:#069;font-weight:bold">$(</span>lsb_release -cs<span style="color:#069;font-weight:bold">)</span><span style="color:#c30"> stable&#34;</span> | sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null</code></pre></div></li>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#366">echo</span> <span style="color:#c30">&#34;deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian </span><span style="color:#069;font-weight:bold">$(</span>lsb_release -cs<span style="color:#069;font-weight:bold">)</span><span style="color:#c30"> stable&#34;</span> | sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null</code></pre></div></li>
 
 <li><p>安装docker</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">apt-get update
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io</code></pre></div></li>
 </ol>
 
@@ -266,7 +266,7 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io</code></pre></div></l
 </blockquote>
 
 <p>在本地已经安装好go (1.11以上) 和docker的情况下，执行下面指令安装kind：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#033">GO111MODULE</span><span style="color:#555">=</span>on <span style="color:#033">GOPROXY</span><span style="color:#555">=</span>goproxy.cn go get sigs.k8s.io/kind@v0.11.1</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#033">GO111MODULE</span><span style="color:#555">=</span>on <span style="color:#033">GOPROXY</span><span style="color:#555">=</span>goproxy.cn go get sigs.k8s.io/kind@v0.11.1</code></pre></div>
 <blockquote>
 <p>0.11.1是当前kind最新的release的，也是后续部署karmada过程中指定要用的版本</p>
 </blockquote>
@@ -322,7 +322,7 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io</code></pre></div></l
 <h2 id="2-karmada控制面构成">2. karmada控制面构成</h2>
 
 <p>部署karmada完成后，在切换到<code>karmada-host</code> context后，执行<code>kubectl get po --all-namespaces</code>可以得到已经部署的组件列表：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">NAMESPACE            NAME                                                 READY   STATUS    RESTARTS   AGE
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">NAMESPACE            NAME                                                 READY   STATUS    RESTARTS   AGE
 karmada-system       etcd-0                                               1/1     Running   <span style="color:#f60">0</span>          98m
 karmada-system       karmada-apiserver-75b5dc6fb7-l6hdv                   1/1     Running   <span style="color:#f60">0</span>          98m
 karmada-system       karmada-controller-manager-7d66968445-nnnpp          1/1     Running   <span style="color:#f60">0</span>          98m
@@ -370,9 +370,9 @@ local-path-storage   local-path-provisioner-78776bfc44-d9fvv              1/1   
 注意：karmada中的host集群和member集群之间的同步方式有push和pull两种，这里的上手过程采用push的方式，感兴趣的读者可以参考karmada的readme尝试pull同步方式</p>
 
 <p>目前karmadactl没有list member集群的功能，对于已经加入的member集群，可以通过获取<code>Cluster</code>类型的CR实现：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl get clusters</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl get clusters</code></pre></div>
 <p>得到输出为：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">NAME      VERSION   MODE   READY   AGE
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">NAME      VERSION   MODE   READY   AGE
 member1   v1.19.1   Push   True    88s</code></pre></div>
 <blockquote>
 <p>上面的create-cluster.sh脚本默认创建最新版的k8s集群，为了避免再次拉下一个大镜像，可以修改create-cluster.sh脚本，为kind create cluster命令加上<code>--image=&quot;kindest/node:v1.19.1&quot;</code>参数</p>
@@ -389,7 +389,7 @@ member1   v1.19.1   Push   True    88s</code></pre></div>
 这时候如果去member1集群查看pod资源的情况，可以发现nginx也没有在member1集群中运行起来</li>
 
 <li><p>执行<code>kubectl create -f samples/nginx/propagationpolicy.yaml</code>，定义如下的propgation policy：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">apiVersion: policy.karmada.io/v1alpha1
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">apiVersion: policy.karmada.io/v1alpha1
 kind: PropagationPolicy
 metadata:
 name: nginx-propagation
@@ -407,10 +407,10 @@ placement:
 <p>这个progation policy将之前部署的nginx deployment资源（由<code>resourceSelectors</code>指定）同步到member1集群（由<code>placement</code>指定）中。</p>
 
 <p>这时不用切换到member1 context，对karmada控制面执行<code>kubectl get deploy</code>可以看到名叫nginx的deployment已经正常运行：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">NAME    READY   UP-TO-DATE   AVAILABLE   AGE
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">NAME    READY   UP-TO-DATE   AVAILABLE   AGE
 nginx   1/1     <span style="color:#f60">1</span>            <span style="color:#f60">1</span>           21m</code></pre></div>
 <p>上述结果说明karmada有能力从member集群同步工作负载状态到host集群。作为验证，我们可以切换到member1集群，执行<code>kubectl get po</code>可以看到deployment对应的nginx pod已经在member1集群内正常运行：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">NAME                     READY   STATUS    RESTARTS   AGE
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">NAME                     READY   STATUS    RESTARTS   AGE
 nginx-6799fc88d8-7tgmb   1/1     Running   <span style="color:#f60">0</span>          8m27s</code></pre></div>
 <h2 id="4-结尾并非结束">4. 结尾并非结束</h2>
 

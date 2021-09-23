@@ -18,7 +18,7 @@
   
   <meta name="description" content="摘要：Docker的容器特性和镜像特性已然为Docker实践者带来了诸多效益，然而Docker的网络特性却不能让用户满意。本文从Docker的网络模式入手，分析了Docker Daemon创建网络环境的详细流程，其中着重于分析Docker桥接模式的创建，为之后Docker Container创建网络环境做铺垫。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -257,7 +257,7 @@
 <p>Docker管理员配置Docker的网络环境，可以在Docker Daemon启动时，通过Docker提供的接口来完成。换言之，可以使用docker二进制可执行文件，运行docker -d并添加相应的flag参数来完成。</p>
 
 <p>其中涉及的flag参数有EnableIptables、EnableIpForward、BridgeIface、BridgeIP以及InterContainerCommunication。该五个参数的定义位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/config.go#L51-L52">./docker/daemon/config.go</a>，具体代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">flag.<span style="color:#c0f">BoolVar</span>(<span style="color:#555">&amp;</span>config.EnableIptables, []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;#iptables&#34;</span>, <span style="color:#c30">&#34;-iptables&#34;</span>}, <span style="color:#069;font-weight:bold">true</span>, <span style="color:#c30">&#34;Enable Docker&#39;s addition of iptables rules&#34;</span>)
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">flag.<span style="color:#c0f">BoolVar</span>(<span style="color:#555">&amp;</span>config.EnableIptables, []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;#iptables&#34;</span>, <span style="color:#c30">&#34;-iptables&#34;</span>}, <span style="color:#069;font-weight:bold">true</span>, <span style="color:#c30">&#34;Enable Docker&#39;s addition of iptables rules&#34;</span>)
 flag.<span style="color:#c0f">BoolVar</span>(<span style="color:#555">&amp;</span>config.EnableIpForward, []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;#ip-forward&#34;</span>, <span style="color:#c30">&#34;-ip-forward&#34;</span>}, <span style="color:#069;font-weight:bold">true</span>, <span style="color:#c30">&#34;Enable net.ipv4.ip_forward&#34;</span>)
 flag.<span style="color:#c0f">StringVar</span>(<span style="color:#555">&amp;</span>config.BridgeIP, []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;#bip&#34;</span>, <span style="color:#c30">&#34;-bip&#34;</span>}, <span style="color:#c30">&#34;&#34;</span>, <span style="color:#c30">&#34;Use this CIDR notation address for the network bridge&#39;s IP, not compatible with -b&#34;</span>)
 flag.<span style="color:#c0f">StringVar</span>(<span style="color:#555">&amp;</span>config.BridgeIface, []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;b&#34;</span>, <span style="color:#c30">&#34;-bridge&#34;</span>}, <span style="color:#c30">&#34;&#34;</span>, <span style="color:#c30">&#34;Attach containers to a pre-existing network bridge\nuse &#39;none&#39; to disable container networking&#34;</span>)
@@ -273,7 +273,7 @@ flag.<span style="color:#c0f">BoolVar</span>(<span style="color:#555">&amp;</spa
 </ul>
 
 <p>除了Docker会使用到的5个flag参数之外，Docker在创建网络环境时，还使用一个DefaultIP变量，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">opts.<span style="color:#c0f">IPVar</span>(<span style="color:#555">&amp;</span>config.DefaultIp, []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;#ip&#34;</span>, <span style="color:#c30">&#34;-ip&#34;</span>}, <span style="color:#c30">&#34;0.0.0.0&#34;</span>, <span style="color:#c30">&#34;Default IP address to use when binding container ports&#34;</span>)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">opts.<span style="color:#c0f">IPVar</span>(<span style="color:#555">&amp;</span>config.DefaultIp, []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;#ip&#34;</span>, <span style="color:#c30">&#34;-ip&#34;</span>}, <span style="color:#c30">&#34;0.0.0.0&#34;</span>, <span style="color:#c30">&#34;Default IP address to use when binding container ports&#34;</span>)</code></pre></div>
 <p>该变量的作用是：当绑定容器的端口时，将DefaultIp作为默认使用的IP地址。</p>
 
 <p>具备了以上Docker Daemon的网络背景知识，以下着重举例分析使用BridgeIP和BridgeIface，在启动Docker Daemon时进行网络配置：</p>
@@ -312,12 +312,12 @@ flag.<span style="color:#c0f">BoolVar</span>(<span style="color:#555">&amp;</spa
 <p>首先检验是否会出现彼此不兼容的配置信息，源码位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/daemon.go#L679-L685">./docker/daemon/daemon.go#L679-L685</a>。</p>
 
 <p>这部分的兼容信息有两种。第一种是BridgeIP和BridgeIface配置信息的兼容性，具体表现为用户启动Docker Daemon时，若同时指定了BridgeIP和BridgIface的值，则出现兼容问题。原因为这两者属于互斥对，换言之，若用户指定了新建网桥的设备名，那么该网桥已经存在，无需指定网桥的IP地址BridgeIP；若用户指定了新建网桥的网络IP地址BridgeIP，那么该网桥肯定还没有新建成功，则Docker Daemon在新建网桥时使用默认网桥名“docker0”。具体如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Check for mutually incompatible config options
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Check for mutually incompatible config options
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">if</span> config.BridgeIface <span style="color:#555">!=</span> <span style="color:#c30">&#34;&#34;</span> <span style="color:#555">&amp;&amp;</span> config.BridgeIP <span style="color:#555">!=</span> <span style="color:#c30">&#34;&#34;</span> {
     <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">nil</span>, fmt.<span style="color:#c0f">Errorf</span>(<span style="color:#c30">&#34;You specified -b &amp; --bip, mutually exclusive options. Please specify only one.&#34;</span>)
 }</code></pre></div>
 <p>第二种是EnableIptables和InterContainerCommunication配置的兼容性，具体是指不能同时指定这两个flag参数为false。原因很简单，如果指定InterContainerCommunication为false，则说明Docker Daemon不允许创建的Docker容器之间互相进行通信。但是为了达到以上目的，Docker正是使用iptables过滤规则。因此，再次设定EnableIptables为false，关闭iptables的使用，即出现了自相矛盾的结果。代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> !config.EnableIptables <span style="color:#555">&amp;&amp;</span> !config.InterContainerCommunication {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> !config.EnableIptables <span style="color:#555">&amp;&amp;</span> !config.InterContainerCommunication {
     <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">nil</span>, fmt.<span style="color:#c0f">Errorf</span>(<span style="color:#c30">&#34;You specified --iptables=false with --icc=false. ICC uses iptables to function. Please set --icc or --iptables to true.&#34;</span>)
     }</code></pre></div>
 <p>检验完系统配置信息的兼容性问题，Docker Daemon接着会判断是否需要为Docker Daemon配置网络环境。判断的依据为BridgeIface的值是否与DisableNetworkBridge的值相等，DisableNetworkBridge在<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/config.go#L13">./docker/daemon/config.go#L13</a>中被定义为const量，值为字符串”none”。因此，若BridgeIface为”none”，则DisableNetwork为true，最终Docker Daemon不会创建网络环境；若BridgeIface不为”none”，则DisableNetwork为false，最终Docker Daemon需要创建网络环境（桥接模式）。</p>
@@ -325,7 +325,7 @@ flag.<span style="color:#c0f">BoolVar</span>(<span style="color:#555">&amp;</spa
 <h3 id="确定docker网络模式"><strong>确定Docker网络模式</strong></h3>
 
 <p>Docker网络模式由配置信息DisableNetwork决定。由于在上一环节已经得出DisableNetwork的值，故这一环节可以确定Docker网络模式。该部分的源码实现位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/daemon.go#L792-L805">./docker/daemon/daemon.go#L792-L805</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> !config.DisableNetwork {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> !config.DisableNetwork {
     job <span style="color:#555">:=</span> eng.<span style="color:#c0f">Job</span>(<span style="color:#c30">&#34;init_networkdriver&#34;</span>)
 
     job.<span style="color:#c0f">SetenvBool</span>(<span style="color:#c30">&#34;EnableIptables&#34;</span>, config.EnableIptables)
@@ -367,7 +367,7 @@ flag.<span style="color:#c0f">BoolVar</span>(<span style="color:#555">&amp;</spa
 <h3 id="提取环境变量"><strong>提取环境变量</strong></h3>
 
 <p>在InitDriver函数的实现过程中，Docker首先提取”init_networkdriver”这个job的环境变量。这样的环境变量共有6个，各自的作用在上文已经详细说明。具体的实现代码为：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">var</span> (
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">var</span> (
     network        <span style="color:#555">*</span>net.IPNet
     enableIPTables = job.<span style="color:#c0f">GetenvBool</span>(<span style="color:#c30">&#34;EnableIptables&#34;</span>)
     icc            = job.<span style="color:#c0f">GetenvBool</span>(<span style="color:#c30">&#34;InterContainerCommunication&#34;</span>)
@@ -383,7 +383,7 @@ bridgeIface = job.<span style="color:#c0f">Getenv</span>(<span style="color:#c30
 <h3 id="确定docker网桥设备名"><strong>确定Docker网桥设备名</strong></h3>
 
 <p>提取job的环境变量之后，Docker随即确定最终使用网桥设备的名称。为此，Docker首先创建了一个名为usingDefaultBridge的bool变量，含义为是否使用默认的网桥设备，默认值为false。接着，若环境变量中bridgeIface的值为空，则说明用户启动Docker时，没有指定特定的网桥设备名，因此Docker首先将usingDefaultBridge置为true，然后使用默认的网桥设备名DefaultNetworkBridge，即docker0；若bridgeIface的值不为空，则判断条件不成立，继续往下执行。这部分的代码实现为：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">usingDefaultBridge <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">false</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">usingDefaultBridge <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">false</span>
 <span style="color:#069;font-weight:bold">if</span> bridgeIface <span style="color:#555">==</span> <span style="color:#c30">&#34;&#34;</span> {
     usingDefaultBridge = <span style="color:#069;font-weight:bold">true</span>
     bridgeIface = DefaultNetworkBridge
@@ -391,7 +391,7 @@ bridgeIface = job.<span style="color:#c0f">Getenv</span>(<span style="color:#c30
 <h3 id="查找bridgeiface网桥设备"><strong>查找bridgeIface网桥设备</strong></h3>
 
 <p>确定Docker网桥设备名bridgeIface之后，Docker首先通过bridgeIface设备名在宿主机上查找该设备是否真实存在。若存在，则返回该网桥设备的IP地址，若不存在，则返回nil。实现代码位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/networkdriver/bridge/driver.go#L99">./docker/daemon/networkdriver/bridge/driver.go#L99</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">addr, err <span style="color:#555">:=</span> networkdriver.<span style="color:#c0f">GetIfaceAddr</span>(bridgeIface)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">addr, err <span style="color:#555">:=</span> networkdriver.<span style="color:#c0f">GetIfaceAddr</span>(bridgeIface)</code></pre></div>
 <p>GetIfaceAddr的实现位于<code>./docker/daemon/networkdriver/utils.go</code>，实现步骤为：首先通过Golang中net包的InterfaceByName方法获取名为bridgeIface的网桥设备，会得出以下结果：</p>
 
 <ul>
@@ -408,7 +408,7 @@ bridgeIface = job.<span style="color:#c0f">Getenv</span>(<span style="color:#c30
 <h3 id="bridgeiface已创建的情况"><strong>bridgeIface已创建的情况</strong></h3>
 
 <p>Docker Daemon所在宿主机上bridgeIface的网桥设备存在时，Docker Daemon仍然需要验证用户在配置信息中是否为网桥设备指定了IP地址。 用户启动Docker Daemon时，假如没有指定bridgeIP参数信息，则Docker Daemon使用名为bridgeIface的原有的IP地址。 当用户指定了bridgeIP参数信息时，则需要验证：指定的bridgeIP参数信息与bridgeIface网桥设备原有的IP地址信息是否匹配。若两者匹配，则验证通过，继续往下执行；若两者不匹配，则验证不通过，抛出错误，显示“bridgeIP与已有网桥配置信息不匹配”。该部分内容位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/networkdriver/bridge/driver.go#L119-L129">./docker/daemon/networkdriver/bridge/driver.go#L119-L129</a>，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">network = addr.(<span style="color:#555">*</span>net.IPNet)
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">network = addr.(<span style="color:#555">*</span>net.IPNet)
 <span style="color:#09f;font-style:italic">// validate that the bridge ip matches the ip specified by BridgeIP
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">if</span> bridgeIP <span style="color:#555">!=</span> <span style="color:#c30">&#34;&#34;</span> {
     bip, _, err <span style="color:#555">:=</span> net.<span style="color:#c0f">ParseCIDR</span>(bridgeIP)
@@ -429,12 +429,12 @@ bridgeIface = job.<span style="color:#c0f">Getenv</span>(<span style="color:#c30
 </ul>
 
 <p>当用户指定的bridgeIface不存在于宿主机时，即没有使用Docker的默认网桥设备名docker0，Docker打印日志信息“指定网桥设备未找到”，并返回网桥未找到的错误信息。代码实现如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> !usingDefaultBridge {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> !usingDefaultBridge {
     job.<span style="color:#c0f">Logf</span>(<span style="color:#c30">&#34;bridge not found: %s&#34;</span>, bridgeIface)
     <span style="color:#069;font-weight:bold">return</span> job.<span style="color:#c0f">Error</span>(err)
 }</code></pre></div>
 <p>当使用的默认网桥设备名，而docker0网桥设备还未创建时，Docker Daemon则立即实现创建网桥的操作，并返回该docker0网桥设备的IP地址。代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// If the iface is not found, try to create it
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// If the iface is not found, try to create it
 </span><span style="color:#09f;font-style:italic"></span>job.<span style="color:#c0f">Logf</span>(<span style="color:#c30">&#34;creating new bridge for %s&#34;</span>, bridgeIface)
 <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> <span style="color:#c0f">createBridge</span>(bridgeIP); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
     <span style="color:#069;font-weight:bold">return</span> job.<span style="color:#c0f">Error</span>(err)
@@ -456,7 +456,7 @@ network = addr.(<span style="color:#555">*</span>net.IPNet)</code></pre></div>
 </ol>
 
 <p>以下详细分析4个步骤的具体实现。 首先Docker Daemon确定docker0的IP地址，实现方式为判断用户是否指定bridgeIP。若用户未指定bridgeIP，则从Docker预先准备的IP网段列表addrs中查找合适的网段。具体的代码实现位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/networkdriver/bridge/driver.go#L257-L278">./docker/daemon/networkdriver/bridge/driver.go#L257-L278</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#366">len</span>(bridgeIP) <span style="color:#555">!=</span> <span style="color:#f60">0</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> <span style="color:#366">len</span>(bridgeIP) <span style="color:#555">!=</span> <span style="color:#f60">0</span> {
     _, _, err <span style="color:#555">:=</span> net.<span style="color:#c0f">ParseCIDR</span>(bridgeIP)
     <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
         <span style="color:#069;font-weight:bold">return</span> err
@@ -479,7 +479,7 @@ network = addr.(<span style="color:#555">*</span>net.IPNet)</code></pre></div>
     }
 }</code></pre></div>
 <p>其中为网桥设备准备的候选网段地址addrs为：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">addrs = []<span style="color:#078;font-weight:bold">string</span>{
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">addrs = []<span style="color:#078;font-weight:bold">string</span>{
         <span style="color:#c30">&#34;172.17.42.1/16&#34;</span>, <span style="color:#09f;font-style:italic">// Don&#39;t use 172.16.0.0/16, it conflicts with EC2 DNS 172.16.0.23
 </span><span style="color:#09f;font-style:italic"></span>        <span style="color:#c30">&#34;10.0.42.1/16&#34;</span>,   <span style="color:#09f;font-style:italic">// Don&#39;t even try using the entire /8, that&#39;s too intrusive
 </span><span style="color:#09f;font-style:italic"></span>        <span style="color:#c30">&#34;10.1.42.1/16&#34;</span>,
@@ -496,7 +496,7 @@ network = addr.(<span style="color:#555">*</span>net.IPNet)</code></pre></div>
 <p>通过以上的流程的执行，可以确定找到一个可用的IP网段地址，为ifaceAddr；若没有找到，则返回错误日志，表明没有合适的IP地址赋予docker0网桥设备。</p>
 
 <p>第二个步骤通过createBridgeIface函数创建docker0网桥设备。createBridgeIface函数的实现如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">createBridgeIface</span>(name <span style="color:#078;font-weight:bold">string</span>) <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">createBridgeIface</span>(name <span style="color:#078;font-weight:bold">string</span>) <span style="color:#078;font-weight:bold">error</span> {
     kv, err <span style="color:#555">:=</span> kernel.<span style="color:#c0f">GetKernelVersion</span>()
     <span style="color:#09f;font-style:italic">// only set the bridge&#39;s mac address if the kernel version is &gt; 3.3
 </span><span style="color:#09f;font-style:italic"></span>    <span style="color:#09f;font-style:italic">// before that it was not supported
@@ -509,15 +509,15 @@ network = addr.(<span style="color:#555">*</span>net.IPNet)</code></pre></div>
 <p>Netlink是Linux中一种较为特殊的socket通信方式，提供了用户应用间和内核进行双向数据传输的途径。在这种模式下，用户态可以使用标准的socket API来使用netlink强大的功能，而内核态需要使用专门的内核API才能使用netlink。</p>
 
 <p>Libcontainer的netlink包中CreateBridge实现了创建实际的网桥设备，具体使用系统调用的代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">syscall.<span style="color:#c0f">Syscall</span>(syscall.SYS_IOCTL, <span style="color:#366">uintptr</span>(s), SIOC_BRADDBR, <span style="color:#366">uintptr</span>(unsafe.<span style="color:#c0f">Pointer</span>(nameBytePtr)))</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">syscall.<span style="color:#c0f">Syscall</span>(syscall.SYS_IOCTL, <span style="color:#366">uintptr</span>(s), SIOC_BRADDBR, <span style="color:#366">uintptr</span>(unsafe.<span style="color:#c0f">Pointer</span>(nameBytePtr)))</code></pre></div>
 <p>创建完网桥设备之后，为docker0网桥设备配置MAC地址，实现函数为setBridgeMacAddress。</p>
 
 <p>第三个步骤是为创建docker0网桥设备绑定IP地址。上一步骤仅完成了创建名为docker0的网桥设备，之后仍需要为docker0网桥设备绑定IP地址。具体代码实现为：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> netlink.<span style="color:#c0f">NetworkLinkAddIp</span>(iface, ipAddr, ipNet); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> netlink.<span style="color:#c0f">NetworkLinkAddIp</span>(iface, ipAddr, ipNet); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
         <span style="color:#069;font-weight:bold">return</span> fmt.<span style="color:#c0f">Errorf</span>(<span style="color:#c30">&#34;Unable to add private network: %s&#34;</span>, err)
 }</code></pre></div>
 <p>NetworkLinkAddIP的实现同样位于libcontainer中的netlink包，主要的功能为：通过netlink机制为一个网络接口设备绑定一个IP地址。 第四个步骤是启动docker0网桥设备。具体实现代码为：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> netlink.<span style="color:#c0f">NetworkLinkUp</span>(iface); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> netlink.<span style="color:#c0f">NetworkLinkUp</span>(iface); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
         <span style="color:#069;font-weight:bold">return</span> fmt.<span style="color:#c0f">Errorf</span>(<span style="color:#c30">&#34;Unable to start network bridge: %s&#34;</span>, err)
     }</code></pre></div>
 <p>NetworkLinkUp的实现同样位于libcontainer中的netlink包，功能为启动docker网桥设备。 至此，docker0网桥历经确定IP、创建、绑定IP、启动四个环节，createBridge关于docker0网桥设备的工作全部完成。</p>
@@ -529,7 +529,7 @@ network = addr.(<span style="color:#555">*</span>net.IPNet)</code></pre></div>
 <h3 id="配置docker-daemon的iptables"><strong>配置Docker Daemon的iptables</strong></h3>
 
 <p>创建完网桥之后，Docker Daemon为容器以及宿主机配置iptables，包括为container之间所需要的link操作提供支持，为host主机上所有的对外对内流量制定传输规则等。该部分详情可以参看<a href="http://www.sel.zju.edu.cn/?p=165">《Docker源码分析（四）：Docker Daemon之NewDaemon实现》</a>。代码位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/networkdriver/bridge/driver.go#L133">./docker/daemon/networkdriver/bridge/driver/driver.go#L133</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Configure iptables for link support
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#09f;font-style:italic">// Configure iptables for link support
 </span><span style="color:#09f;font-style:italic"></span><span style="color:#069;font-weight:bold">if</span> enableIPTables {
         <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> <span style="color:#c0f">setupIPTables</span>(addr, icc); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
             <span style="color:#069;font-weight:bold">return</span> job.<span style="color:#c0f">Error</span>(err)
@@ -551,7 +551,7 @@ network = addr.(<span style="color:#555">*</span>net.IPNet)</code></pre></div>
 <h3 id="配置网络设备间数据报转发功能"><strong>配置网络设备间数据报转发功能</strong></h3>
 
 <p>在Linux系统上，数据包转发功能是被默认禁止的。数据包转发，就是当host主机存在多个网络设备时，如果其中一个接收到数据包，并需要将其转发给另外的网络设备。通过修改/proc/sys/net/ipv4/ip_forward的值，将其置为1，则可以保证系统内数据包可以实现转发功能，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> ipForward {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> ipForward {
         <span style="color:#09f;font-style:italic">// Enable IPv4 forwarding
 </span><span style="color:#09f;font-style:italic"></span>        <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> ioutil.<span style="color:#c0f">WriteFile</span>(<span style="color:#c30">&#34;/proc/sys/net/ipv4/ip_forward&#34;</span>, []<span style="color:#078;font-weight:bold">byte</span>{<span style="color:#c30">&#39;1&#39;</span>, <span style="color:#c30">&#39;\n&#39;</span>}, <span style="color:#f60">0644</span>); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
             job.<span style="color:#c0f">Logf</span>(<span style="color:#c30">&#34;WARNING: unable to enable IPv4 forwarding: %s\n&#34;</span>, err)

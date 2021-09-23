@@ -18,7 +18,7 @@
   
   <meta name="description" content="Kubernetes是Google开源的容器集群管理系统，构建于Docker之上，为容器化的应用提供资源调度、部署运行、服务发现、扩容缩容等功能。其从Docker默认网络模型中独立出来形成了一套自己的网络模型，本文将详细介绍。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -240,7 +240,7 @@
 <p>启动Docker时附加参数：DOCKER_OPTS=&ldquo;&ndash;bridge cbr0 &ndash;iptables=false&rdquo;。</p>
 
 <p>并用SaltStack在每个node中创建一个网桥，代码见container_bridge.py：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">cbr0:
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">cbr0:
   container_bridge<span style="color:#555">.</span>ensure:
   <span style="color:#555">-</span> cidr: {{ grains[<span style="color:#c30">&#39;cbr-cidr&#39;</span>] }}
 <span style="color:#555">...</span>
@@ -249,7 +249,7 @@ grains:
   <span style="color:#555">-</span> kubernetes<span style="color:#555">-</span>pool
   cbr<span style="color:#555">-</span>cidr: <span style="color:#a00;background-color:#faa">$</span>MINION_IP_RANGE</code></pre></div>
 <p>在GCE中，我们让以下IP地址可路由：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">gcloud compute routes add <span style="color:#c30">&#34;</span><span style="color:#a00">${</span><span style="color:#033">MINION_NAMES</span>[<span style="color:#033">$i</span>]<span style="color:#a00">}</span><span style="color:#c30">&#34;</span> <span style="color:#c30;font-weight:bold">\
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">gcloud compute routes add <span style="color:#c30">&#34;</span><span style="color:#a00">${</span><span style="color:#033">MINION_NAMES</span>[<span style="color:#033">$i</span>]<span style="color:#a00">}</span><span style="color:#c30">&#34;</span> <span style="color:#c30;font-weight:bold">\
 </span><span style="color:#c30;font-weight:bold"></span>  --project <span style="color:#c30">&#34;</span><span style="color:#a00">${</span><span style="color:#033">PROJECT</span><span style="color:#a00">}</span><span style="color:#c30">&#34;</span> <span style="color:#c30;font-weight:bold">\
 </span><span style="color:#c30;font-weight:bold"></span>  --destination-range <span style="color:#c30">&#34;</span><span style="color:#a00">${</span><span style="color:#033">MINION_IP_RANGES</span>[<span style="color:#033">$i</span>]<span style="color:#a00">}</span><span style="color:#c30">&#34;</span> <span style="color:#c30;font-weight:bold">\
 </span><span style="color:#c30;font-weight:bold"></span>  --network <span style="color:#c30">&#34;</span><span style="color:#a00">${</span><span style="color:#033">NETWORK</span><span style="color:#a00">}</span><span style="color:#c30">&#34;</span> <span style="color:#c30;font-weight:bold">\

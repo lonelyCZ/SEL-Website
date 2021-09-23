@@ -18,7 +18,7 @@
   
   <meta name="description" content="karmada是华为开源的云原生多云容器编排平台，目标是让开发者像使用单个k8s集群一样使用多k8s集群。它的第一个release（v0.1.0）出现在2020年12月，而正式发布则是2021年4月25日在深圳召开的华为开发者大会（HDC.Cloud）2021上。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -244,7 +244,7 @@
 </ol>
 
 <p>执行<code>kubectl get po -A --context=karmada-host</code>，我们可以得到已经部署的组件列表：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">NAMESPACE            NAME                                                 READY   STATUS    RESTARTS   AGE
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">NAMESPACE            NAME                                                 READY   STATUS    RESTARTS   AGE
 karmada-system       etcd-0                                               1/1     Running   <span style="color:#f60">0</span>          98m
 karmada-system       karmada-apiserver-75b5dc6fb7-l6hdv                   1/1     Running   <span style="color:#f60">0</span>          98m
 karmada-system       karmada-controller-manager-7d66968445-nnnpp          1/1     Running   <span style="color:#f60">0</span>          98m
@@ -314,34 +314,34 @@ karmada scheduler对每个经过上一步过滤的成员集群调用每个插件
 <p>当resource binding的<code>.spec.clusters</code>为空，就表示该resource binding资源从未经过调度，这时karmada scheduler判定它的状态为首次调度。</p>
 
 <p>当resource binding的<code>.spec.clusters</code>不为空，但是上一次调度中绑定的propagation policy的placement发生了变化，则karmada scheduler判定它的状态为调和调度。karmada scheduler是如何得知上一次调度中propagation policy的placement？原来karmada scheduler在上一次调度完成后，把当时的propagation policy的placement记在了resource binding的annotations中。比如下面的yaml是一个经过karmada scheduler调度的resource binding对象：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>work.karmada.io/v1alpha1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ResourceBinding<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">annotations</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">policy.karmada.io/applied-placement</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#39;{&#34;clusterAffinity&#34;:{&#34;clusterNames&#34;:[&#34;member1&#34;,&#34;member2&#34;]}}&#39;</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">propagationpolicy.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">propagationpolicy.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">manager</span>:<span style="color:#bbb"> </span>karmada-controller-manager<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">clusters</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member2<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">replicaRequirements</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">resourceRequest</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">ephemeral-storage</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">memory</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">pods</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">resource</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">resourceVersion</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;9439&#34;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>work.karmada.io/v1alpha1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ResourceBinding<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">policy.karmada.io/applied-placement</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#39;{&#34;clusterAffinity&#34;:{&#34;clusterNames&#34;:[&#34;member1&#34;,&#34;member2&#34;]}}&#39;</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">propagationpolicy.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">propagationpolicy.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">manager</span>:<span style="color:#bbb"> </span>karmada-controller-manager<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">clusters</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member2<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">replicaRequirements</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">resourceRequest</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">ephemeral-storage</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">memory</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">pods</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">resource</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">resourceVersion</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;9439&#34;</span></code></pre></div>
 <p>可以看到这个resource binding对象中，有<code>propagationpolicy.karmada.io/name</code>和<code>propagationpolicy.karmada.io/namespace</code>两个label标记了绑定的是哪个propagation policy（在这里是<code>default</code> namespace中的<code>nginx-propagation</code>）。在<code>policy.karmada.io/applied-placement</code>这个annotations中还标记了当时的placment：<code>'{&quot;clusterAffinity&quot;:{&quot;clusterNames&quot;:[&quot;member1&quot;,&quot;member2&quot;]}}'</code>。</p>
 
 <p>所以如果用户修改了<code>default</code> namespace中的<code>nginx-propagation</code> propagation policy的placement，比如在应用的部署目标集群<code>member1</code>和<code>member2</code>中增加了<code>member3</code>，karmada scheduler就会检测到这个变化，并判定该resource binding处于调和调度状态。</p>
@@ -371,55 +371,55 @@ karmada scheduler对每个经过上一步过滤的成员集群调用每个插件
 <p>假定当前karmada集群联邦中有两个成员集群：<code>member1</code>和<code>member2</code>，我们需要将一个repolica为3的nginx deployment部署到<code>member1</code>和<code>member2</code>。其中部署在<code>member1</code>的replica为总replica数量的2/3，部署在<code>member2</code>上的replica为总replica数量的1/3。</p>
 
 <p>首先我们定义如下的nginx deployment，replica数量为3：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">3</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">selector</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">template</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">containers</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span>- <span style="color:#069;font-weight:bold">image</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">3</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">template</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">app</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">containers</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span>- <span style="color:#309;font-weight:bold">image</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx</code></pre></div>
 <p>然后我们定义如下的propagation policy：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>policy.karmada.io/v1alpha1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>PropagationPolicy<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">resourceSelectors</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span>- <span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">placement</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">clusterAffinity</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">clusterNames</span>:<span style="color:#bbb">
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>policy.karmada.io/v1alpha1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>PropagationPolicy<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">resourceSelectors</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span>- <span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">placement</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">clusterAffinity</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">clusterNames</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">        </span>- member1<span style="color:#bbb">
 </span><span style="color:#bbb">        </span>- member2<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">replicaScheduling</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">replicaSchedulingType</span>:<span style="color:#bbb"> </span>Divided<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">replicaDivisionPreference</span>:<span style="color:#bbb"> </span>Weighted<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">weightPreference</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">        </span><span style="color:#069;font-weight:bold">staticWeightList</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">          </span>- <span style="color:#069;font-weight:bold">targetCluster</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">              </span><span style="color:#069;font-weight:bold">clusterNames</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">replicaScheduling</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">replicaSchedulingType</span>:<span style="color:#bbb"> </span>Divided<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">replicaDivisionPreference</span>:<span style="color:#bbb"> </span>Weighted<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">weightPreference</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">        </span><span style="color:#309;font-weight:bold">staticWeightList</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">          </span>- <span style="color:#309;font-weight:bold">targetCluster</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">              </span><span style="color:#309;font-weight:bold">clusterNames</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">                </span>- member1<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">weight</span>:<span style="color:#bbb"> </span><span style="color:#f60">2</span><span style="color:#bbb">
-</span><span style="color:#bbb">          </span>- <span style="color:#069;font-weight:bold">targetCluster</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">              </span><span style="color:#069;font-weight:bold">clusterNames</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">weight</span>:<span style="color:#bbb"> </span><span style="color:#f60">2</span><span style="color:#bbb">
+</span><span style="color:#bbb">          </span>- <span style="color:#309;font-weight:bold">targetCluster</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">              </span><span style="color:#309;font-weight:bold">clusterNames</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">                </span>- member2<span style="color:#bbb">
-</span><span style="color:#bbb">            </span><span style="color:#069;font-weight:bold">weight</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span></code></pre></div>
+</span><span style="color:#bbb">            </span><span style="color:#309;font-weight:bold">weight</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span></code></pre></div>
 <p>上面的propagation policy包含了一个replica scheduling strategy（<code>.spec.placement.replicaScheduling</code>），对它说明如下：</p>
 
 <ol>
@@ -432,45 +432,45 @@ karmada scheduler支持两种类型的replica scheduling strategy：“切分”
 </ol>
 
 <p>将上述的deployment和propagation policy通过<code>kubectl apply</code>提交给karmada apiserver后，执行<code>kubectl get rb nginx-deployment -n default -o yaml --context=karmada-apiserver</code>可以查看karmada scheduler更新过的包含调度结果的resource binding。可以看到<code>.spec.clusters</code>中，分配到<code>member1</code>集群上的replica数量是2，分配到<code>member2</code>集群上的replica数量是1，符合replica总数是3，按照2：1的权重分配的设定。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>work.karmada.io/v1alpha1<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ResourceBinding<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">annotations</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">policy.karmada.io/applied-placement</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#39;{&#34;clusterAffinity&#34;:{&#34;clusterNames&#34;:[&#34;member1&#34;,&#34;member2&#34;]},&#34;replicaScheduling&#34;:{&#34;replicaSchedulingType&#34;:&#34;Divided&#34;,&#34;replicaDivisionPreference&#34;:&#34;Weighted&#34;,&#34;weightPreference&#34;:{&#34;staticWeightList&#34;:[{&#34;targetCluster&#34;:{&#34;clusterNames&#34;:[&#34;member1&#34;]},&#34;weight&#34;:2},{&#34;targetCluster&#34;:{&#34;clusterNames&#34;:[&#34;member2&#34;]},&#34;weight&#34;:1}]}}}&#39;</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">creationTimestamp</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;2021-09-21T05:17:24Z&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">generation</span>:<span style="color:#bbb"> </span><span style="color:#f60">7</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">propagationpolicy.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">propagationpolicy.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">manager</span>:<span style="color:#bbb"> </span>karmada-controller-manager<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">ownerReferences</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">blockOwnerDeletion</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">controller</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">uid</span>:<span style="color:#bbb"> </span>7e2f4ad5-b04b-448b-a249-4340c7a90fcc<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">clusters</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">2</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member2<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">replicaRequirements</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">resourceRequest</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">ephemeral-storage</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">memory</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">      </span><span style="color:#069;font-weight:bold">pods</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">3</span><span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#069;font-weight:bold">resource</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#069;font-weight:bold">resourceVersion</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;9439&#34;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>work.karmada.io/v1alpha1<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ResourceBinding<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">policy.karmada.io/applied-placement</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#39;{&#34;clusterAffinity&#34;:{&#34;clusterNames&#34;:[&#34;member1&#34;,&#34;member2&#34;]},&#34;replicaScheduling&#34;:{&#34;replicaSchedulingType&#34;:&#34;Divided&#34;,&#34;replicaDivisionPreference&#34;:&#34;Weighted&#34;,&#34;weightPreference&#34;:{&#34;staticWeightList&#34;:[{&#34;targetCluster&#34;:{&#34;clusterNames&#34;:[&#34;member1&#34;]},&#34;weight&#34;:2},{&#34;targetCluster&#34;:{&#34;clusterNames&#34;:[&#34;member2&#34;]},&#34;weight&#34;:1}]}}}&#39;</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">creationTimestamp</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;2021-09-21T05:17:24Z&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">generation</span>:<span style="color:#bbb"> </span><span style="color:#f60">7</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">propagationpolicy.karmada.io/name</span>:<span style="color:#bbb"> </span>nginx-propagation<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">propagationpolicy.karmada.io/namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">manager</span>:<span style="color:#bbb"> </span>karmada-controller-manager<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx-deployment<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">ownerReferences</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">blockOwnerDeletion</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">controller</span>:<span style="color:#bbb"> </span><span style="color:#069;font-weight:bold">true</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">uid</span>:<span style="color:#bbb"> </span>7e2f4ad5-b04b-448b-a249-4340c7a90fcc<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">clusters</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member1<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">2</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>member2<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">1</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">replicaRequirements</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">resourceRequest</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">cpu</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">ephemeral-storage</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">memory</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">      </span><span style="color:#309;font-weight:bold">pods</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;0&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#f60">3</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#309;font-weight:bold">resource</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>nginx<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>default<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#309;font-weight:bold">resourceVersion</span>:<span style="color:#bbb"> </span><span style="color:#c30">&#34;9439&#34;</span></code></pre></div>
 <p>当前karmada scheduler仅支持deployment的replica scheduling policy，未来可能支持statefulset等其他带replica属性的k8s原生API资源类型（resource detector的<code>GetReplicaDeclaration</code>方法会把需要下发到成员集群的deployment资源的replica抽取出来，放在resource binding的<code>.spec.replicas</code>里）。</p>
 
 <h3 id="3-2-扩缩容调度">3.2. 扩缩容调度</h3>

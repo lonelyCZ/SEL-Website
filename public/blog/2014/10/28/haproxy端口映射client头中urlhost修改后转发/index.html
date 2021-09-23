@@ -18,7 +18,7 @@
   
   <meta name="description" content="CloudFoundry是对域名强依赖的云计算集群，没有域名的话几乎无法访问。但是域名备案等事宜所耗时间较长，在上线较为紧急的情况下，就需要实现直接通过“IP&#43;端口”的形式，在公网访问CF集群上部署的APP。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -227,7 +227,7 @@
 <h1 id="修改基本的配置文件如下">修改基本的配置文件如下：</h1>
 
 <p>配置文件所在地址：<code>/etc/haproxy/haproxy.cfg</code>（用xx.xx.xx.xx代表一个IP地址）</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">global
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">global
     chroot      <span style="color:#3aa">/var/</span>lib<span style="color:#555">/</span>haproxy
     pidfile     <span style="color:#3aa">/var/</span>run<span style="color:#555">/</span>haproxy<span style="color:#555">.</span>pid
     maxconn     <span style="color:#f60">4000</span>

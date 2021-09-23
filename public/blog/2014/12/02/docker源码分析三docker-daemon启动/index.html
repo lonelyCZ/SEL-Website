@@ -18,7 +18,7 @@
   
   <meta name="description" content="【Docker源码分析（三）：Docker Daemon启动】Docker作为业界备受推崇的轻量级虚拟化容器管理引擎，其强大的后台能力全凭Docker Daemon。本文从源码出发，介绍了Docker Daemon的启动流程，并深入分析启动流程中每一步骤的实现细节。Docker的运行真可谓，载体为daemon，调度管理由engine，任务执行靠job。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -271,7 +271,7 @@
 <h2 id="5-0-配置初始化"><strong>5.0 配置初始化</strong></h2>
 
 <p>在mainDaemon()运行之前，关于Docker Daemon所需要的config配置信息均已经初始化完毕。具体实现如下，位于<a href="https://github.com/docker/docker/blob/master/docker/daemon.go#L21">./docker/docker/daemon.go</a>：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">var</span> (
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">var</span> (
     daemonCfg = <span style="color:#555">&amp;</span>daemon.Config{}
 )
 <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">init</span>() {
@@ -280,7 +280,7 @@
 <p>首先，声明一个为daemon包中Config类型的变量，名为daemonCfg。而Config对象，定义了Docker Daemon所需的配置信息。在Docker Daemon在启动时，daemonCfg变量被传递至Docker Daemon并被使用。</p>
 
 <p>Config对象的定义如下（含部分属性的解释），位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/config.go#L20">./docker/daemon/config.go</a>：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> Config <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> Config <span style="color:#069;font-weight:bold">struct</span> {
         Pidfile                  <span style="color:#078;font-weight:bold">string</span>   <span style="color:#09f;font-style:italic">//Docker Daemon所属进程的PID文件
 </span><span style="color:#09f;font-style:italic"></span>        Root                   <span style="color:#078;font-weight:bold">string</span>   <span style="color:#09f;font-style:italic">//Docker运行时所使用的root路径
 </span><span style="color:#09f;font-style:italic"></span>        AutoRestart             <span style="color:#078;font-weight:bold">bool</span>    <span style="color:#09f;font-style:italic">//已被启用，转而支持docker run时的重启
@@ -304,7 +304,7 @@
 </span><span style="color:#09f;font-style:italic"></span>        Context                 <span style="color:#069;font-weight:bold">map</span>[<span style="color:#078;font-weight:bold">string</span>][]<span style="color:#078;font-weight:bold">string</span>   <span style="color:#09f;font-style:italic">//有定义，之后未初始化
 </span><span style="color:#09f;font-style:italic"></span>    }</code></pre></div>
 <p>已经有声明的daemonCfg之后，init()函数实现了daemonCfg变量中各属性的赋值，具体的实现为：daemonCfg.InstallFlags()，位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/config.go#L45">./docker/daemon/config.go</a>，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (config <span style="color:#555">*</span>Config) <span style="color:#c0f">InstallFlags</span>() {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (config <span style="color:#555">*</span>Config) <span style="color:#c0f">InstallFlags</span>() {
         flag.<span style="color:#c0f">StringVar</span>(<span style="color:#555">&amp;</span>config.Pidfile, []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;p&#34;</span>, <span style="color:#c30">&#34;-pidfile&#34;</span>}, <span style="color:#c30">&#34;/var/run/docker.pid&#34;</span>, <span style="color:#c30">&#34;Path to use for daemon PID file&#34;</span>)
         flag.<span style="color:#c0f">StringVar</span>(<span style="color:#555">&amp;</span>config.Root, []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;g&#34;</span>, <span style="color:#c30">&#34;-graph&#34;</span>}, <span style="color:#c30">&#34;/var/lib/docker&#34;</span>, <span style="color:#c30">&#34;Path to use as the root of the Docker runtime&#34;</span>)
         <span style="color:#a00;background-color:#faa">……</span>
@@ -313,7 +313,7 @@
         <span style="color:#a00;background-color:#faa">……</span>
     }</code></pre></div>
 <p>在InstallFlags()函数的实现过程中，主要是定义某种类型的flag参数，并将该参数的值绑定在config变量的指定属性上，如：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    flag.<span style="color:#c0f">StringVar</span>(<span style="color:#555">&amp;</span>config.Pidfile, []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;p&#34;</span>, <span style="color:#c30">&#34;-pidfile&#34;</span>}, <span style="color:#c30">&#34;/var/run/docker.pid&#34;</span>, <span style="color:#c30">&#34;Path to use for daemon PID file&#34;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    flag.<span style="color:#c0f">StringVar</span>(<span style="color:#555">&amp;</span>config.Pidfile, []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;p&#34;</span>, <span style="color:#c30">&#34;-pidfile&#34;</span>}, <span style="color:#c30">&#34;/var/run/docker.pid&#34;</span>, <span style="color:#c30">&#34;Path to use for daemon PID file&#34;</span></code></pre></div>
 <p>以上语句的含义为：</p>
 
 <ul>
@@ -330,18 +330,18 @@
 <p>从这一节开始，真正进入Docker Daemon的mainDaemon()运行分析。</p>
 
 <p>第一个步骤即flag参数的检查。具体而言，即当docker命令经过flag参数解析之后，判断剩余的参数是否为0。若为0，则说明Docker Daemon的启动命令无误，正常运行；若不为0，则说明在启动Docker Daemon的时候，传入了多余的参数，此时会输出错误提示，并退出运行程序。具体代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> flag.<span style="color:#c0f">NArg</span>() <span style="color:#555">!=</span> <span style="color:#f60">0</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> flag.<span style="color:#c0f">NArg</span>() <span style="color:#555">!=</span> <span style="color:#f60">0</span> {
     flag.<span style="color:#c0f">Usage</span>()
     <span style="color:#069;font-weight:bold">return</span>
 }</code></pre></div>
 <h2 id="5-2-创建engine对象"><strong>5.2 创建engine对象</strong></h2>
 
 <p>在mainDaemon()运行过程中，flag参数检查完毕之后，随即创建engine对象，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">eng <span style="color:#555">:=</span> engine.<span style="color:#c0f">New</span>()</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">eng <span style="color:#555">:=</span> engine.<span style="color:#c0f">New</span>()</code></pre></div>
 <p>Engine是Docker架构中的运行引擎，同时也是Docker运行的核心模块。Engine扮演着Docker container存储仓库的角色，并且通过job的形式来管理这些容器。</p>
 
 <p>在<a href="https://github.com/docker/docker/blob/v1.2.0/engine/engine.go#L47">./docker/engine/engine.go</a>中,Engine结构体的定义如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> Engine <span style="color:#069;font-weight:bold">struct</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">type</span> Engine <span style="color:#069;font-weight:bold">struct</span> {
         handlers   <span style="color:#069;font-weight:bold">map</span>[<span style="color:#078;font-weight:bold">string</span>]Handler
         catchall   Handler
         hack       Hack <span style="color:#09f;font-style:italic">// data for temporary hackery (see hack.go)
@@ -356,11 +356,11 @@
         onShutdown []<span style="color:#069;font-weight:bold">func</span>() <span style="color:#09f;font-style:italic">// shutdown handlers
 </span><span style="color:#09f;font-style:italic"></span>    }</code></pre></div>
 <p>其中，Engine结构体中最为重要的即为handlers属性。该handlers属性为map类型，key为string类型，value为Handler类型。其中Handler类型的定义如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"> <span style="color:#069;font-weight:bold">type</span> Handler <span style="color:#069;font-weight:bold">func</span>(<span style="color:#555">*</span>Job) Status</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"> <span style="color:#069;font-weight:bold">type</span> Handler <span style="color:#069;font-weight:bold">func</span>(<span style="color:#555">*</span>Job) Status</code></pre></div>
 <p>可见，Handler为一个定义的函数。该函数传入的参数为Job指针，返回为Status状态。</p>
 
 <p>介绍完Engine以及Handler，现在真正进入New()函数的实现中：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">New</span>() <span style="color:#555">*</span>Engine {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">New</span>() <span style="color:#555">*</span>Engine {
         eng <span style="color:#555">:=</span> <span style="color:#555">&amp;</span>Engine{
             handlers: <span style="color:#366">make</span>(<span style="color:#069;font-weight:bold">map</span>[<span style="color:#078;font-weight:bold">string</span>]Handler),
             id:       utils.<span style="color:#c0f">RandomString</span>(),
@@ -386,7 +386,7 @@
 <h2 id="5-3-设置engine的信号捕获"><strong>5.3 设置engine的信号捕获</strong></h2>
 
 <p>回到mainDaemon()函数的运行中，执行后续代码：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">signal.Trap<span style="color:#555">(</span>eng.Shutdown<span style="color:#555">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">signal.Trap<span style="color:#555">(</span>eng.Shutdown<span style="color:#555">)</span></code></pre></div>
 <p>该部分代码的作用是：在Docker Daemon的运行中，设置Trap特定信号的处理方法，特定信号有SIGINT，SIGTERM以及SIGQUIT；当程序捕获到SIGINT或者SIGTERM信号时，执行相应的善后操作，最后保证Docker Daemon程序退出。</p>
 
 <p>该部分的代码的实现位于<a href="https://github.com/docker/docker/blob/v1.2.0/pkg/signal/trap.go#L20">./docker/pkg/signal/trap.go</a>。实现的流程分为以下4个步骤：</p>
@@ -414,11 +414,11 @@
 <h2 id="5-4-加载builtins"><strong>5.4 加载builtins</strong></h2>
 
 <p>为eng设置完Trap特定信号的处理方法之后，Docker Daemon实现了builtins的加载。代码实现如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> builtins.<span style="color:#c0f">Register</span>(eng); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> builtins.<span style="color:#c0f">Register</span>(eng); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
     log.<span style="color:#c0f">Fatal</span>(err)
 }</code></pre></div>
 <p>加载builtins的主要工作是为：为engine注册多个Handler，以便后续在执行相应任务时，运行指定的Handler。这些Handler包括：网络初始化、web API服务、事件查询、版本查看、Docker Registry验证与搜索。代码实现位于<a href="https://github.com/docker/docker/blob/v1.2.0/builtins/builtins.go#L16">./docker/builtins/builtins.go</a>,如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">Register</span>(eng <span style="color:#555">*</span>engine.Engine) <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">Register</span>(eng <span style="color:#555">*</span>engine.Engine) <span style="color:#078;font-weight:bold">error</span> {
         <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> <span style="color:#c0f">daemon</span>(eng); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
             <span style="color:#069;font-weight:bold">return</span> err
         }
@@ -438,9 +438,10 @@
 <h3 id="5-4-1-注册初始化网络驱动的handler"><strong>5.4.1 注册初始化网络驱动的Handler</strong></h3>
 
 <p>daemon(eng)的实现过程，主要为eng对象注册了一个key为”init_networkdriver”的Handler，该Handler的值为bridge.InitDriver函数，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">daemon</span>(eng <span style="color:#555">*</span>engine.Engine) <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">daemon</span>(eng <span style="color:#555">*</span>engine.Engine) <span style="color:#078;font-weight:bold">error</span> {
         <span style="color:#069;font-weight:bold">return</span> eng.<span style="color:#c0f">Register</span>(<span style="color:#c30">&#34;init_networkdriver&#34;</span>, bridge.InitDriver)
-    }    </code></pre></div>
+    }    
+</code></pre></div>
 <p>需要注意的是，向eng对象注册Handler，并不代表Handler的值函数会被直接运行，如bridge.InitDriver，并不会直接运行，而是将bridge.InitDriver的函数入口，写入eng的handlers属性中。 Bridge.InitDriver的具体实现位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/networkdriver/bridge/driver.go#L79">./docker/daemon/networkdriver/bridge/driver.go</a> ，主要作用为：</p>
 
 <ul>
@@ -452,13 +453,13 @@
 <h3 id="5-4-2-注册api服务的handler"><strong>5.4.2 注册API服务的Handler</strong></h3>
 
 <p>remote(eng)的实现过程，主要为eng对象注册了两个Handler，分别为”serveapi”与”acceptconnections”。代码实现如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">      <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">remote</span>(eng <span style="color:#555">*</span>engine.Engine) <span style="color:#078;font-weight:bold">error</span> { <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> eng.<span style="color:#c0f">Register</span>(<span style="color:#c30">&#34;serveapi&#34;</span>, apiserver.ServeApi); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> { <span style="color:#069;font-weight:bold">return</span> err } <span style="color:#069;font-weight:bold">return</span> eng.<span style="color:#c0f">Register</span>(<span style="color:#c30">&#34;acceptconnections&#34;</span>, apiserver.AcceptConnections) }</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">      <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">remote</span>(eng <span style="color:#555">*</span>engine.Engine) <span style="color:#078;font-weight:bold">error</span> { <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">:=</span> eng.<span style="color:#c0f">Register</span>(<span style="color:#c30">&#34;serveapi&#34;</span>, apiserver.ServeApi); err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> { <span style="color:#069;font-weight:bold">return</span> err } <span style="color:#069;font-weight:bold">return</span> eng.<span style="color:#c0f">Register</span>(<span style="color:#c30">&#34;acceptconnections&#34;</span>, apiserver.AcceptConnections) }</code></pre></div>
 <p>注册的两个Handler名称分别为”serveapi”与”acceptconnections”,相应的执行方法分别为apiserver.ServeApi与apiserver.AcceptConnections，具体实现位于<a href="https://github.com/docker/docker/blob/v1.2.0/api/server/server.go">./docker/api/server/server.go</a>。其中，ServeApi执行时，通过循环多种协议，创建出goroutine来配置指定的http.Server，最终为不同的协议请求服务；而AcceptConnections的实现主要是为了通知init守护进程，Docker Daemon已经启动完毕，可以让Docker Daemon进程接受请求。</p>
 
 <h3 id="5-4-3-注册events事件的handler"><strong>5.4.3 注册events事件的Handler</strong></h3>
 
 <p>events.New().Install(eng)的实现过程，为Docker注册了多个event事件，功能是给Docker用户提供API，使得用户可以通过这些API查看Docker内部的events信息，log信息以及subscribers_count信息。具体的代码位于<a href="https://github.com/docker/docker/blob/v1.2.0/events/events.go#L29">./docker/events/events.go</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (e <span style="color:#555">*</span>Events) <span style="color:#c0f">Install</span>(eng <span style="color:#555">*</span>engine.Engine) <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (e <span style="color:#555">*</span>Events) <span style="color:#c0f">Install</span>(eng <span style="color:#555">*</span>engine.Engine) <span style="color:#078;font-weight:bold">error</span> {
         jobs <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">map</span>[<span style="color:#078;font-weight:bold">string</span>]engine.Handler{
             <span style="color:#c30">&#34;events&#34;</span>:            e.Get,
             <span style="color:#c30">&#34;log&#34;</span>:               e.Log,
@@ -474,7 +475,7 @@
 <h3 id="5-4-4-注册版本的handler"><strong>5.4.4 注册版本的Handler</strong></h3>
 
 <p>eng.Register(“version”,dockerVersion)的实现过程，向eng对象注册key为”version”，value为”dockerVersion”执行方法的Handler，dockerVersion的执行过程中，会向名为version的job的标准输出中写入Docker的版本，Docker API的版本，git版本，Go语言运行时版本以及操作系统等版本信息。dockerVersion的具体实现如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">dockerVersion</span>(job <span style="color:#555">*</span>engine.Job) engine.Status {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">dockerVersion</span>(job <span style="color:#555">*</span>engine.Job) engine.Status {
         v <span style="color:#555">:=</span> <span style="color:#555">&amp;</span>engine.Env{}
         v.<span style="color:#c0f">SetJson</span>(<span style="color:#c30">&#34;Version&#34;</span>, dockerversion.VERSION)
         v.<span style="color:#c0f">SetJson</span>(<span style="color:#c30">&#34;ApiVersion&#34;</span>, api.APIVERSION)
@@ -493,7 +494,7 @@
 <h3 id="5-4-5-注册registry的handler"><strong>5.4.5 注册registry的Handler</strong></h3>
 
 <p>registry.NewService().Install(eng)的实现过程位于<a href="https://github.com/docker/docker/blob/v1.2.0/registry/service.go#L25">./docker/registry/service.go</a>，在eng对象对外暴露的API信息中添加docker registry的信息。当registry.NewService()成功被Install安装完毕的话，则有两个调用能够被eng使用：”auth”，向公有registry进行认证；”search”，在公有registry上搜索指定的镜像。 Install的具体实现如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (s <span style="color:#555">*</span>Service) <span style="color:#c0f">Install</span>(eng <span style="color:#555">*</span>engine.Engine) <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (s <span style="color:#555">*</span>Service) <span style="color:#c0f">Install</span>(eng <span style="color:#555">*</span>engine.Engine) <span style="color:#078;font-weight:bold">error</span> {
         eng.<span style="color:#c0f">Register</span>(<span style="color:#c30">&#34;auth&#34;</span>, s.Auth)
         eng.<span style="color:#c0f">Register</span>(<span style="color:#c30">&#34;search&#34;</span>, s.Search)
         <span style="color:#069;font-weight:bold">return</span> <span style="color:#069;font-weight:bold">nil</span>
@@ -505,7 +506,7 @@
 <p>执行完builtins的加载，回到mainDaemon()的执行，通过一个goroutine来加载daemon对象并开始运行。这一环节的执行，主要包含三个步骤：</p>
 
 <p>通过init函数中初始化的daemonCfg与eng对象来创建一个daemon对象d； 通过daemon对象的Install函数，向eng对象中注册众多的Handler； 在Docker Daemon启动完毕之后，运行名为”acceptconnections”的job，主要工作为向init守护进程发送”READY=1”信号，以便开始正常接受请求。 代码实现如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">go</span> <span style="color:#069;font-weight:bold">func</span>() {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#069;font-weight:bold">go</span> <span style="color:#069;font-weight:bold">func</span>() {
     d, err <span style="color:#555">:=</span> daemon.<span style="color:#c0f">MainDaemon</span>(daemonCfg, eng)
     <span style="color:#069;font-weight:bold">if</span> err <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
         log.<span style="color:#c0f">Fatal</span>(err)
@@ -528,7 +529,7 @@
 <h3 id="5-5-2-通过daemon对象为engine注册handler"><strong>5.5.2 通过daemon对象为engine注册Handler</strong></h3>
 
 <p>当创建完daemon对象，goroutine执行d.Install(eng)，具体实现位于<a href="https://github.com/docker/docker/blob/v1.2.0/daemon/daemon.go#L100">./docker/daemon/daemon.go</a>:</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (daemon <span style="color:#555">*</span>Daemon) <span style="color:#c0f">Install</span>(eng <span style="color:#555">*</span>engine.Engine) <span style="color:#078;font-weight:bold">error</span> {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (daemon <span style="color:#555">*</span>Daemon) <span style="color:#c0f">Install</span>(eng <span style="color:#555">*</span>engine.Engine) <span style="color:#078;font-weight:bold">error</span> {
         <span style="color:#069;font-weight:bold">for</span> name, method <span style="color:#555">:=</span> <span style="color:#069;font-weight:bold">range</span> <span style="color:#069;font-weight:bold">map</span>[<span style="color:#078;font-weight:bold">string</span>]engine.Handler{
             <span style="color:#c30">&#34;attach&#34;</span>:            daemon.ContainerAttach,
             <span style="color:#a00;background-color:#faa">……</span>
@@ -561,7 +562,7 @@
 <p>可以看到首先执行eng.Job(&ldquo;acceptconnections&rdquo;)，返回一个Job，随后再执行eng.Job(&ldquo;acceptconnections&rdquo;).Run()，也就是该执行Job的run函数。</p>
 
 <p>eng.Job(“acceptconnections”)的实现位于<a href="https://github.com/docker/docker/blob/v1.2.0/engine/engine.go#L115">./docker/engine/engine.go</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (eng <span style="color:#555">*</span>Engine) <span style="color:#c0f">Job</span>(name <span style="color:#078;font-weight:bold">string</span>, args <span style="color:#555">...</span><span style="color:#078;font-weight:bold">string</span>) <span style="color:#555">*</span>Job {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> (eng <span style="color:#555">*</span>Engine) <span style="color:#c0f">Job</span>(name <span style="color:#078;font-weight:bold">string</span>, args <span style="color:#555">...</span><span style="color:#078;font-weight:bold">string</span>) <span style="color:#555">*</span>Job {
         job <span style="color:#555">:=</span> <span style="color:#555">&amp;</span>Job{
             Eng:    eng,
             Name:   name,
@@ -586,7 +587,7 @@
 <p>创建完job对象之后，随即执行该job对象的run()函数。Run()函数的实现位于<a href="https://github.com/docker/docker/blob/v1.2.0/engine/job.go#L48">./docker/engine/job.go</a>，该函数执行指定的job，并在job执行完成前一直阻塞。对于名为”acceptconnections”的job对象，运行代码为<a href="https://github.com/docker/docker/blob/v1.2.0/engine/job.go#L79">job.status = job.handler(job)</a>，由于job.handler值为apiserver.AcceptConnections，故真正执行的是job.status = apiserver.AcceptConnections(job)。</p>
 
 <p>进入AcceptConnections的具体实现，位于<a href="https://github.com/docker/docker/blob/v1.2.0/api/server/server.go#L1370">./docker/api/server/server.go</a>,如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">AcceptConnections</span>(job <span style="color:#555">*</span>engine.Job) engine.Status {
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    <span style="color:#069;font-weight:bold">func</span> <span style="color:#c0f">AcceptConnections</span>(job <span style="color:#555">*</span>engine.Job) engine.Status {
         <span style="color:#09f;font-style:italic">// Tell the init daemon we are accepting requests
 </span><span style="color:#09f;font-style:italic"></span>        <span style="color:#069;font-weight:bold">go</span>  systemd.<span style="color:#c0f">SdNotify</span>(<span style="color:#c30">&#34;READY=1&#34;</span>)
         <span style="color:#069;font-weight:bold">if</span> activationLock <span style="color:#555">!=</span> <span style="color:#069;font-weight:bold">nil</span> {
@@ -603,7 +604,7 @@
 <p>回到mainDaemon()的运行流程中，在goroutine的执行之时，mainDaemon()函数内部其它代码也会并发执行。</p>
 
 <p>第一个执行的即为显示docker的版本信息，以及ExecDriver和GraphDriver这两个驱动的具体信息，代码如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">log.<span style="color:#c0f">Printf</span>(<span style="color:#c30">&#34;docker daemon: %s %s; execdriver: %s; graphdriver: %s&#34;</span>,
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">log.<span style="color:#c0f">Printf</span>(<span style="color:#c30">&#34;docker daemon: %s %s; execdriver: %s; graphdriver: %s&#34;</span>,
     dockerversion.VERSION,
     dockerversion.GITCOMMIT,
     daemonCfg.ExecDriver,
@@ -612,7 +613,7 @@
 <h2 id="5-7-job之serveapi的创建与运行"><strong>5.7 Job之serveapi的创建与运行</strong></h2>
 
 <p>打印部分Docker具体信息之后，Docker Daemon立即创建并运行名为”serveapi”的job，主要作用为让Docker Daemon提供API访问服务。实现代码位于<a href="https://github.com/docker/docker/blob/v1.2.0/docker/daemon.go#L66">./docker/docker/daemon.go#L66</a>，如下：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    job <span style="color:#555">:=</span> eng.<span style="color:#c0f">Job</span>(<span style="color:#c30">&#34;serveapi&#34;</span>, flHosts<span style="color:#555">...</span>)
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">    job <span style="color:#555">:=</span> eng.<span style="color:#c0f">Job</span>(<span style="color:#c30">&#34;serveapi&#34;</span>, flHosts<span style="color:#555">...</span>)
     job.<span style="color:#c0f">SetenvBool</span>(<span style="color:#c30">&#34;Logging&#34;</span>, <span style="color:#069;font-weight:bold">true</span>)
     job.<span style="color:#c0f">SetenvBool</span>(<span style="color:#c30">&#34;EnableCors&#34;</span>, <span style="color:#555">*</span>flEnableCors)
     job.<span style="color:#c0f">Setenv</span>(<span style="color:#c30">&#34;Version&#34;</span>, dockerversion.VERSION)

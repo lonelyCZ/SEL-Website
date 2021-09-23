@@ -18,7 +18,7 @@
   
   <meta name="description" content="如istio官方关于pilot模块的架构图所示，istio中的agent模块负责的工作包括：1.生成envoy的配置；2.启动envoy；3.监控并管理envoy的运行状况，比如envoy出错时pilot-agent负责重启envoy，或者envoy配置变更后reload envoy。而envoy负责接受所有发往该pod的网络流量，分发所有从pod中发出的网络流量。">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -335,7 +335,7 @@
 <li><p>envoy二进制所在文件系统路径：evony.Run通过proxy.config.BinaryPath变量得知envoy二进制所在的文件系统位置，proxy就是envoy对象，config就是pilot-agent的main方法在一开始初始化的proxyConfig对象。里面的BinaryPath在pilot-agent的init方法中被初始化，初始值来自pilot/pkg/model/context.go的DefaultProxyConfig函数，值是<code>/usr/local/bin/envoy</code></p></li>
 
 <li><p>envoy的启动flag形式为下面的startupArgs，包含一个<code>-c</code>指定的配置文件，还有一些flag。除了下面代码片段中展示的这些flag，还可以根据启动agent时的flag，再加上<code>--concurrency</code>, <code>--service-zone</code>等flag。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">startupArgs <span style="color:#555">:=</span> []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;-c&#34;</span>, fname,
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">startupArgs <span style="color:#555">:=</span> []<span style="color:#078;font-weight:bold">string</span>{<span style="color:#c30">&#34;-c&#34;</span>, fname,
         <span style="color:#c30">&#34;--restart-epoch&#34;</span>, fmt.<span style="color:#c0f">Sprint</span>(epoch),
         <span style="color:#c30">&#34;--drain-time-s&#34;</span>, fmt.<span style="color:#c0f">Sprint</span>(<span style="color:#366">int</span>(<span style="color:#c0f">convertDuration</span>(proxy.config.DrainDuration) <span style="color:#555">/</span> time.Second)),
         <span style="color:#c30">&#34;--parent-shutdown-time-s&#34;</span>, fmt.<span style="color:#c0f">Sprint</span>(<span style="color:#366">int</span>(<span style="color:#c0f">convertDuration</span>(proxy.config.ParentShutdownDuration) <span style="color:#555">/</span> time.Second)),
@@ -364,7 +364,7 @@
 </ol>
 
 <p>举个例子的话，根据参考文献中某人实验，第一个envoy进程启动参数为：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#555">-</span>c <span style="color:#555">/</span>etc<span style="color:#555">/</span>istio<span style="color:#555">/</span>proxy<span style="color:#555">/</span>envoy<span style="color:#555">-</span>rev0.json <span style="color:#555">--</span>restart<span style="color:#555">-</span>epoch <span style="color:#f60">0</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#555">-</span>c <span style="color:#555">/</span>etc<span style="color:#555">/</span>istio<span style="color:#555">/</span>proxy<span style="color:#555">/</span>envoy<span style="color:#555">-</span>rev0.json <span style="color:#555">--</span>restart<span style="color:#555">-</span>epoch <span style="color:#f60">0</span>
 <span style="color:#555">--</span>drain<span style="color:#555">-</span>time<span style="color:#555">-</span>s <span style="color:#f60">45</span> <span style="color:#555">--</span>parent<span style="color:#555">-</span>shutdown<span style="color:#555">-</span>time<span style="color:#555">-</span>s <span style="color:#f60">60</span>
 <span style="color:#555">--</span>service<span style="color:#555">-</span>cluster sleep 
 <span style="color:#555">--</span>service<span style="color:#555">-</span>node sidecar<span style="color:#a00;background-color:#faa">~</span><span style="color:#f60">172.00.00.000</span><span style="color:#a00;background-color:#faa">~</span>sleep<span style="color:#555">-</span><span style="color:#f60">55</span>b5877479<span style="color:#555">-</span>rwcct.<span style="color:#069;font-weight:bold">default</span><span style="color:#a00;background-color:#faa">~</span><span style="color:#069;font-weight:bold">default</span>.svc.cluster.local 

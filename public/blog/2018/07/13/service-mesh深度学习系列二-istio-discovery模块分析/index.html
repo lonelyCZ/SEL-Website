@@ -18,7 +18,7 @@
   
   <meta name="description" content="如下图所示，istio的pilot模块扮演服务注册中心、istio控制平面到Envoy之间的桥梁作用。pilot主要功能包括：1.监控服务注册中心（如Kubernetes）的服务注册情况。在Kubernetes环境下，会监控service、endpoint、pod、node等资源信息 2.监控istio控制面信息变化，在Kubernetes环境下，会监控包括RouteRule、 VirtualService、Gateway、EgressRule、ServiceEntry等以Kubernetes CRD形式存在的istio控制面配置信息。3.将上述两类信息合并组合为Envoy可以理解的（即遵循Envoy data plane api的）配置信息，并将这些信息以gRPC协议提供给Envoy">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -343,24 +343,24 @@
 <p>具体service controller对服务注册信息的变更处理流程框架将在本文“pilot-discovery主要功能分析之三：服务注册信息监控与处理”中描述。</p>
 
 <p>在istio中有一个特殊的service controller，在pilot-discovery初始化与服务注册中心连接的过程中无需用户在<code>discovery</code>命令的<code>registries</code> flag中提供配置也会默认加载，它就是<code>pilot/pkg/serviceregistry/external</code>包下定义的service entry service controller。该service controller专用来处理istio v1alpha3中的新资源对象ServiceEntry。 ServiceEntry允许用户向istio service mesh中添加外部服务（所以包名叫external），也就是那些不存在于某个服务注册中心的服务，比如下面ServiceEntry资源定义了一个部署在外部的MongoDB服务，关于ServiceEntry的更多使用方法，详见<a href="https://istio.io/docs/reference/config/istio.networking.v1alpha3/#ServiceEntry">官方文档</a>：</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#bbb">   </span><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>networking.istio.io/v1alpha3<span style="color:#bbb">
-</span><span style="color:#bbb">   </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ServiceEntry<span style="color:#bbb">
-</span><span style="color:#bbb">   </span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">     </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>external-svc-mongocluster<span style="color:#bbb">
-</span><span style="color:#bbb">   </span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">     </span><span style="color:#069;font-weight:bold">hosts</span>:<span style="color:#bbb">
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#bbb">   </span><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>networking.istio.io/v1alpha3<span style="color:#bbb">
+</span><span style="color:#bbb">   </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ServiceEntry<span style="color:#bbb">
+</span><span style="color:#bbb">   </span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">     </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>external-svc-mongocluster<span style="color:#bbb">
+</span><span style="color:#bbb">   </span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">     </span><span style="color:#309;font-weight:bold">hosts</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">     </span>- mymongodb.somedomain<span style="color:#bbb"> </span><span style="color:#09f;font-style:italic"># not used</span><span style="color:#bbb">
-</span><span style="color:#bbb">     </span><span style="color:#069;font-weight:bold">addresses</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">     </span>- <span style="color:#f60">192.192.192.192</span>/<span style="color:#f60">24</span><span style="color:#bbb"> </span><span style="color:#09f;font-style:italic"># VIPs</span><span style="color:#bbb">
-</span><span style="color:#bbb">     </span><span style="color:#069;font-weight:bold">ports</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">     </span>- <span style="color:#069;font-weight:bold">number</span>:<span style="color:#bbb"> </span><span style="color:#f60">27018</span><span style="color:#bbb">
-</span><span style="color:#bbb">       </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>mongodb<span style="color:#bbb">
-</span><span style="color:#bbb">       </span><span style="color:#069;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>MONGO<span style="color:#bbb">
-</span><span style="color:#bbb">     </span><span style="color:#069;font-weight:bold">location</span>:<span style="color:#bbb"> </span>MESH_INTERNAL<span style="color:#bbb">
-</span><span style="color:#bbb">     </span><span style="color:#069;font-weight:bold">resolution</span>:<span style="color:#bbb"> </span>STATIC<span style="color:#bbb">
-</span><span style="color:#bbb">     </span><span style="color:#069;font-weight:bold">endpoints</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">     </span>- <span style="color:#069;font-weight:bold">address</span>:<span style="color:#bbb"> </span><span style="color:#f60">2.2.2.2</span><span style="color:#bbb">
-</span><span style="color:#bbb">     </span>- <span style="color:#069;font-weight:bold">address</span>:<span style="color:#bbb"> </span><span style="color:#f60">3.3.3.3</span></code></pre></div>
+</span><span style="color:#bbb">     </span><span style="color:#309;font-weight:bold">addresses</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">     </span>- <span style="color:#f60">192.192.192.192</span>/24<span style="color:#bbb"> </span><span style="color:#09f;font-style:italic"># VIPs</span><span style="color:#bbb">
+</span><span style="color:#bbb">     </span><span style="color:#309;font-weight:bold">ports</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">     </span>- <span style="color:#309;font-weight:bold">number</span>:<span style="color:#bbb"> </span><span style="color:#f60">27018</span><span style="color:#bbb">
+</span><span style="color:#bbb">       </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>mongodb<span style="color:#bbb">
+</span><span style="color:#bbb">       </span><span style="color:#309;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>MONGO<span style="color:#bbb">
+</span><span style="color:#bbb">     </span><span style="color:#309;font-weight:bold">location</span>:<span style="color:#bbb"> </span>MESH_INTERNAL<span style="color:#bbb">
+</span><span style="color:#bbb">     </span><span style="color:#309;font-weight:bold">resolution</span>:<span style="color:#bbb"> </span>STATIC<span style="color:#bbb">
+</span><span style="color:#bbb">     </span><span style="color:#309;font-weight:bold">endpoints</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">     </span>- <span style="color:#309;font-weight:bold">address</span>:<span style="color:#bbb"> </span><span style="color:#f60">2.2.2.2</span><span style="color:#bbb">
+</span><span style="color:#bbb">     </span>- <span style="color:#309;font-weight:bold">address</span>:<span style="color:#bbb"> </span><span style="color:#f60">3.3.3.3</span></code></pre></div>
 <ol>
 <li>初始化discovery服务（initDiscoveryService）<br /></li>
 </ol>

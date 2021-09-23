@@ -18,7 +18,7 @@
   
   <meta name="description" content="service mesh社区的健康发展离不开控制面和数据面之间的标准化接口，从而使得无论是控制面的开发团队还是数据面的开发团队都可以集中精力依照统一标准开发。对此，istio社区中提出了xds这种data plane api，并号召开源社区的广泛参与和采用。本文着重分析istio项目中的xds主要存在形式，包括cds和eds">
 
-  <meta name="generator" content="Hugo 0.68.3" />
+  <meta name="generator" content="Hugo 0.88.1" />
 
   
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
@@ -427,28 +427,28 @@
 <p>使用istioctl创建的<code>DestinationRule</code>资源可以用来表达同一个服务的多个版本。比如下面的DestinationRule定义了<code>reviews</code>服务的3个<code>subset</code>，每个<code>subset</code>对应<code>reviews</code>服务的一个版本：v1、v2和v3。在Kubernetes环境下翻译过来就是具有label version=v1的service是v1版本的reviews服务，具有label version=v2的service是v2版本的reviews服务，以此类推。</p>
 
 <p>针对这里的每个版本（subset），需要创建一个单独的subcluster（其实就是一个独立的cluster），subcluster具有跟前面创建的cluster有类似的名称，形式为<code>outbound|service端口号|subset名称|Hostname</code>，注意这里的第三项不再是空白。</p>
-<div class="highlight"><pre style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#bbb">   </span><span style="color:#069;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>networking.istio.io/v1alpha3<span style="color:#bbb">
-</span><span style="color:#bbb">   </span><span style="color:#069;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>DestinationRule<span style="color:#bbb">
-</span><span style="color:#bbb">   </span><span style="color:#069;font-weight:bold">metadata</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">     </span><span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>reviews<span style="color:#bbb">
-</span><span style="color:#bbb">   </span><span style="color:#069;font-weight:bold">spec</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">     </span><span style="color:#069;font-weight:bold">host</span>:<span style="color:#bbb"> </span>reviews<span style="color:#bbb">
-</span><span style="color:#bbb">     </span><span style="color:#069;font-weight:bold">trafficPolicy</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">       </span><span style="color:#069;font-weight:bold">loadBalancer</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">         </span><span style="color:#069;font-weight:bold">simple</span>:<span style="color:#bbb"> </span>RANDOM<span style="color:#bbb">
-</span><span style="color:#bbb">     </span><span style="color:#069;font-weight:bold">subsets</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">     </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
-</span><span style="color:#bbb">       </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">         </span><span style="color:#069;font-weight:bold">version</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
-</span><span style="color:#bbb">     </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>v2<span style="color:#bbb">
-</span><span style="color:#bbb">       </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">         </span><span style="color:#069;font-weight:bold">version</span>:<span style="color:#bbb"> </span>v2<span style="color:#bbb">
-</span><span style="color:#bbb">       </span><span style="color:#069;font-weight:bold">trafficPolicy</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">         </span><span style="color:#069;font-weight:bold">loadBalancer</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">           </span><span style="color:#069;font-weight:bold">simple</span>:<span style="color:#bbb"> </span>ROUND_ROBIN<span style="color:#bbb">
-</span><span style="color:#bbb">     </span>- <span style="color:#069;font-weight:bold">name</span>:<span style="color:#bbb"> </span>v3<span style="color:#bbb">
-</span><span style="color:#bbb">       </span><span style="color:#069;font-weight:bold">labels</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">         </span><span style="color:#069;font-weight:bold">version</span>:<span style="color:#bbb"> </span>v3</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f3f3;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#bbb">   </span><span style="color:#309;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>networking.istio.io/v1alpha3<span style="color:#bbb">
+</span><span style="color:#bbb">   </span><span style="color:#309;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>DestinationRule<span style="color:#bbb">
+</span><span style="color:#bbb">   </span><span style="color:#309;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">     </span><span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>reviews<span style="color:#bbb">
+</span><span style="color:#bbb">   </span><span style="color:#309;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">     </span><span style="color:#309;font-weight:bold">host</span>:<span style="color:#bbb"> </span>reviews<span style="color:#bbb">
+</span><span style="color:#bbb">     </span><span style="color:#309;font-weight:bold">trafficPolicy</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">       </span><span style="color:#309;font-weight:bold">loadBalancer</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">         </span><span style="color:#309;font-weight:bold">simple</span>:<span style="color:#bbb"> </span>RANDOM<span style="color:#bbb">
+</span><span style="color:#bbb">     </span><span style="color:#309;font-weight:bold">subsets</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">     </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span><span style="color:#bbb">       </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">         </span><span style="color:#309;font-weight:bold">version</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span><span style="color:#bbb">     </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>v2<span style="color:#bbb">
+</span><span style="color:#bbb">       </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">         </span><span style="color:#309;font-weight:bold">version</span>:<span style="color:#bbb"> </span>v2<span style="color:#bbb">
+</span><span style="color:#bbb">       </span><span style="color:#309;font-weight:bold">trafficPolicy</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">         </span><span style="color:#309;font-weight:bold">loadBalancer</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">           </span><span style="color:#309;font-weight:bold">simple</span>:<span style="color:#bbb"> </span>ROUND_ROBIN<span style="color:#bbb">
+</span><span style="color:#bbb">     </span>- <span style="color:#309;font-weight:bold">name</span>:<span style="color:#bbb"> </span>v3<span style="color:#bbb">
+</span><span style="color:#bbb">       </span><span style="color:#309;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">         </span><span style="color:#309;font-weight:bold">version</span>:<span style="color:#bbb"> </span>v3</code></pre></div>
 <ol>
 <li>根据DestinationRule里定义的traffic policy，为cluster、subcluster配置流量控制策略,包括connection pool、outlier detection、负载均衡策略， upstream tls设置等。<br /></li>
 </ol>

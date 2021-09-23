@@ -6,11 +6,7 @@
     <description>Recent content in Blogs on 浙大SEL实验室</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Wed, 22 Sep 2021 10:00:11 +0000</lastBuildDate>
-    
-	<atom:link href="http://www.sel.zju.edu.cn/blog/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <lastBuildDate>Wed, 22 Sep 2021 10:00:11 +0000</lastBuildDate><atom:link href="http://www.sel.zju.edu.cn/blog/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>多云环境下的资源调度：karmada scheduler的框架和实现</title>
       <link>http://www.sel.zju.edu.cn/blog/2021/09/22/%E5%A4%9A%E4%BA%91%E7%8E%AF%E5%A2%83%E4%B8%8B%E7%9A%84%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6karmada-scheduler%E7%9A%84%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E7%8E%B0/</link>

@@ -6,11 +6,7 @@
     <description>Recent content in news on 浙大SEL实验室</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Wed, 30 Nov 2016 18:12:46 +0000</lastBuildDate>
-    
-	<atom:link href="http://www.sel.zju.edu.cn/tags/news/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <lastBuildDate>Wed, 30 Nov 2016 18:12:46 +0000</lastBuildDate><atom:link href="http://www.sel.zju.edu.cn/tags/news/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Kubernetes全球代码贡献量排行，浙江大学第六</title>
       <link>http://www.sel.zju.edu.cn/blog/2016/11/30/k8s%E4%BB%A3%E7%A0%81%E8%B4%A1%E7%8C%AE%E6%B5%99%E6%B1%9F%E5%A4%A7%E5%AD%A6%E6%8E%92%E5%90%8D%E7%AC%AC%E5%85%AD/</link>
